@@ -2,13 +2,16 @@
 
 #include "OculusXREnvironmentDepthExtensionPlugin.h"
 
+#if OCULUS_HMD_SUPPORTED_PLATFORMS_VULKAN
+#define XR_USE_GRAPHICS_API_VULKAN 1
+#include <vulkan/vulkan.h>
+#endif
+#include "khronos/openxr/openxr_platform.h"
+
 #include "IOpenXRHMDModule.h"
 #include "OculusXRHMD_DynamicResolutionState.h"
 #include "OpenXR/OculusXROpenXRUtilities.h"
 #include "OpenXRPlatformRHI.h"
-
-#include <vulkan/vulkan.h>
-#include "khronos/openxr/openxr_platform.h"
 
 #if PLATFORM_ANDROID
 #include "AndroidPermissionCallbackProxy.h"
@@ -24,6 +27,16 @@
 #include "ScreenPass.h"
 #include "RenderResource.h"
 #include "Shader.h"
+
+#if OCULUS_HMD_SUPPORTED_PLATFORMS_D3D11
+#include "ID3D11DynamicRHI.h"
+#endif
+#if OCULUS_HMD_SUPPORTED_PLATFORMS_D3D12
+#include "ID3D12DynamicRHI.h"
+#endif
+#if OCULUS_HMD_SUPPORTED_PLATFORMS_VULKAN
+#include "IVulkanDynamicRHI.h"
+#endif
 
 namespace
 {
@@ -418,7 +431,7 @@ namespace OculusXR
 				SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
 				RHICmdList.SetBatchedShaderParameters(RHICmdList.GetBoundPixelShader(), BatchedParameters);
 
-#ifdef WITH_OCULUS_BRANCH
+#if defined(WITH_OCULUS_BRANCH) && UE_VERSION_OLDER_THAN(5, 6, 1)
 				// If GSupportsMultiViewPerViewViewports is true then we must specify a stereo viewport otherwise
 				// it will lead to undefined behaviour in the right eye.
 				if (GSupportsMultiViewPerViewViewports)

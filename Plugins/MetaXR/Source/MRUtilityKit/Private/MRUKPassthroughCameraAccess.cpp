@@ -18,15 +18,17 @@
 namespace
 {
 #if PLATFORM_ANDROID
-	void* MrukVulkanGetInstanceProcAddr(uint64 instance, const char* name)
+	void* GetVulkanInstanceProcAddr(uint64 Instance, const char* Name)
 	{
-		if (instance == 0)
+#if !UE_VERSION_OLDER_THAN(5, 6, 0)
+		if (Instance == 0)
 		{
-			return GetIVulkanDynamicRHI()->RHIGetVkInstanceGlobalProcAddr(name);
+			return GetIVulkanDynamicRHI()->RHIGetVkInstanceGlobalProcAddr(Name);
 		}
 		else
+#endif
 		{
-			return GetIVulkanDynamicRHI()->RHIGetVkInstanceProcAddr(name);
+			return GetIVulkanDynamicRHI()->RHIGetVkInstanceProcAddr(Name);
 		}
 	}
 #endif
@@ -86,13 +88,13 @@ void UMRUKPassthroughCameraAccessSubsystem::Deinitialize()
 
 TArray<FVector2D> UMRUKPassthroughCameraAccessSubsystem::GetSupportedResolutions(EMRUKCameraEye CameraEye)
 {
-	const int EyeIndex = static_cast<int>(CameraEye);
-	int Length = 0;
+	const int32 EyeIndex = static_cast<int32>(CameraEye);
+	int32 Length = 0;
 	MRUKShared::Vector2i* Buffer = MRUKShared::GetInstance()->CameraGetSupportedResolutions(EyeIndex, &Length);
 
 	TArray<FVector2D> Resolutions;
 	Resolutions.SetNum(Length);
-	for (int i = 0; i < Length; ++i)
+	for (int32 i = 0; i < Length; ++i)
 	{
 		Resolutions[i].X = Buffer[i].x;
 		Resolutions[i].Y = Buffer[i].y;
@@ -105,7 +107,7 @@ TArray<FVector2D> UMRUKPassthroughCameraAccessSubsystem::GetSupportedResolutions
 
 bool UMRUKPassthroughCameraAccessSubsystem::Play(int& Width, int& Height, int MaxFramerate, EMRUKCameraEye CameraEye)
 {
-	int CameraEyeIndex = static_cast<int>(CameraEye);
+	const int32 CameraEyeIndex = static_cast<int32>(CameraEye);
 
 	UE_LOG(LogMRUK, Log, TEXT("Play camera eye: %d"), CameraEyeIndex);
 
@@ -133,8 +135,8 @@ bool UMRUKPassthroughCameraAccessSubsystem::Play(int& Width, int& Height, int Ma
 	}
 #endif
 
-	MRUKShared::CameraIntrinsics MrukCameraIntrinsics{};
-	if (!MRUKShared::GetInstance()->CameraPlay(static_cast<int>(CameraEye), &Width, &Height, &MrukCameraIntrinsics, MaxFramerate))
+	MRUKShared::CameraIntrinsics CameraIntrinsicsData{};
+	if (!MRUKShared::GetInstance()->CameraPlay(static_cast<int>(CameraEye), &Width, &Height, &CameraIntrinsicsData, MaxFramerate))
 	{
 		if (Width == -1 || Height == -1)
 		{
@@ -156,35 +158,35 @@ bool UMRUKPassthroughCameraAccessSubsystem::Play(int& Width, int& Height, int Ma
 		VkDevice Device = VulkanRHI->RHIGetVkDevice();
 		VkQueue Queue = VulkanRHI->RHIGetGraphicsVkQueue();
 		uint32 QueueFamilyIndex = VulkanRHI->RHIGetGraphicsQueueFamilyIndex();
-		void* GetInstanceProcAddr = (void*)MrukVulkanGetInstanceProcAddr;
+		void* GetInstanceProcAddrFunc = (void*)GetVulkanInstanceProcAddr;
 
 		ENQUEUE_RENDER_COMMAND(InitializePcaCamera)
-		([this, Instance, PhysicalDevice, Device, Queue, QueueFamilyIndex, GetInstanceProcAddr, CameraEye](FRHICommandListImmediate& RHICmdList) {
+		([this, Instance, PhysicalDevice, Device, Queue, QueueFamilyIndex, GetInstanceProcAddrFunc, CameraEye](FRHICommandListImmediate& RHICmdList) {
 			MRUKShared::GetInstance()->CameraInitializeVulkan(reinterpret_cast<uint64_t>(Instance),
 				reinterpret_cast<uint64_t>(PhysicalDevice), reinterpret_cast<uint64_t>(Device),
-				reinterpret_cast<uint64_t>(Queue), QueueFamilyIndex, GetInstanceProcAddr);
+				reinterpret_cast<uint64_t>(Queue), QueueFamilyIndex, GetInstanceProcAddrFunc);
 		});
 	}
 	ENQUEUE_RENDER_COMMAND(InitializePcaCamera)
 	([this, CameraEyeIndex](FRHICommandListImmediate& RHICmdList) {
 		UTexture* Texture = Textures[CameraEyeIndex];
-		void* nativeTextureHandle = Texture->GetResource()->GetTexture2DRHI()->GetNativeResource();
-		MRUKShared::GetInstance()->CameraSetNativeTexture(CameraEyeIndex, &nativeTextureHandle);
+		void* NativeTextureHandle = Texture->GetResource()->GetTexture2DRHI()->GetNativeResource();
+		MRUKShared::GetInstance()->CameraSetNativeTexture(CameraEyeIndex, &NativeTextureHandle);
 	});
 #endif
 
 	UE_LOG(LogMRUK, Log, TEXT("Playing camera eye index %d with resolution %dx%d."), CameraEye, Width, Height);
 
-	const auto WorldToMeters = GetWorld() ? GetWorld()->GetWorldSettings()->WorldToMeters : 100.0;
+	const double WorldToMeters = GetWorld() ? GetWorld()->GetWorldSettings()->WorldToMeters : 100.0;
 
-	CameraIntrinsics[CameraEyeIndex].FocalLength = FVector2D(MrukCameraIntrinsics.focalLength);
-	CameraIntrinsics[CameraEyeIndex].PrincipalPoint = FVector2D(MrukCameraIntrinsics.principalPoint);
-	CameraIntrinsics[CameraEyeIndex].SensorResolution = FIntVector2(MrukCameraIntrinsics.sensorResolution.x, MrukCameraIntrinsics.sensorResolution.y);
+	CameraIntrinsics[CameraEyeIndex].FocalLength = FVector2D(CameraIntrinsicsData.focalLength);
+	CameraIntrinsics[CameraEyeIndex].PrincipalPoint = FVector2D(CameraIntrinsicsData.principalPoint);
+	CameraIntrinsics[CameraEyeIndex].SensorResolution = FIntVector2(CameraIntrinsicsData.sensorResolution.x, CameraIntrinsicsData.sensorResolution.y);
 
-	const FVector LensPosition = FVector(-MrukCameraIntrinsics.lensTranslation.Z, MrukCameraIntrinsics.lensTranslation.X, MrukCameraIntrinsics.lensTranslation.Y) * WorldToMeters;
+	const FVector LensPosition = FVector(-CameraIntrinsicsData.lensTranslation.Z, CameraIntrinsicsData.lensTranslation.X, CameraIntrinsicsData.lensTranslation.Y) * WorldToMeters;
 
 	// TODO: Simplify. This converts currently from Camera2API -> Unity -> Unreal. Convert directly from Camera2API to Unreal.
-	const FQuat Orientation = FQuat(-MrukCameraIntrinsics.lensRotation.x, -MrukCameraIntrinsics.lensRotation.y, MrukCameraIntrinsics.lensRotation.z, MrukCameraIntrinsics.lensRotation.w).Inverse() * FQuat::MakeFromEuler(FVector(-180.0f, 0.0f, 0.0f));
+	const FQuat Orientation = FQuat(-CameraIntrinsicsData.lensRotation.x, -CameraIntrinsicsData.lensRotation.y, CameraIntrinsicsData.lensRotation.z, CameraIntrinsicsData.lensRotation.w).Inverse() * FQuat::MakeFromEuler(FVector(-180.0f, 0.0f, 0.0f));
 	const FQuat LensOrientation = FQuat(Orientation.Z, Orientation.X, Orientation.Y, Orientation.W);
 
 	CameraIntrinsics[CameraEyeIndex].LensOffsetPosition = LensPosition;
@@ -195,7 +197,7 @@ bool UMRUKPassthroughCameraAccessSubsystem::Play(int& Width, int& Height, int Ma
 
 void UMRUKPassthroughCameraAccessSubsystem::Stop(EMRUKCameraEye CameraEye)
 {
-	int CameraEyeIndex = static_cast<int>(CameraEye);
+	const int32 CameraEyeIndex = static_cast<int32>(CameraEye);
 
 	UE_LOG(LogMRUK, Log, TEXT("Stop camera eye: %d"), CameraEyeIndex);
 
@@ -209,14 +211,13 @@ void UMRUKPassthroughCameraAccessSubsystem::Stop(EMRUKCameraEye CameraEye)
 	// Enqueue a update native texture command to clear the native texture
 	ENQUEUE_RENDER_COMMAND(InitializePcaCamera)
 	([this, CameraEyeIndex](FRHICommandListImmediate& RHICmdList) {
-		UTexture* Texture = Textures[CameraEyeIndex];
 		MRUKShared::GetInstance()->CameraUpdateNativeTexture(CameraEyeIndex);
 	});
 }
 
 void UMRUKPassthroughCameraAccessSubsystem::GetCameraPose(EMRUKCameraEye Eye, FVector& OutPosition, FQuat& OutOrientation)
 {
-	const int EyeIndex = static_cast<int>(Eye);
+	const int32 EyeIndex = static_cast<int32>(Eye);
 	if (EyeIndex >= TimestampNsMonotonic.Num())
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Invalid Eye passed to GetCameraPose"));
@@ -225,13 +226,13 @@ void UMRUKPassthroughCameraAccessSubsystem::GetCameraPose(EMRUKCameraEye Eye, FV
 		return;
 	}
 
-	const int64_t TimestampNs = TimestampNsMonotonic[static_cast<int>(Eye)];
+	const int64 TimestampNs = TimestampNsMonotonic[static_cast<int32>(Eye)];
 
 	FVector3f CameraPosition{};
 	MRUKShared::Quatf CameraRotation{};
 	MRUKShared::GetInstance()->GetHeadsetPoseAtTime(TimestampNs, &CameraPosition, &CameraRotation);
 
-	const auto WorldToMeters = GetWorld() ? GetWorld()->GetWorldSettings()->WorldToMeters : 100.0;
+	const double WorldToMeters = GetWorld() ? GetWorld()->GetWorldSettings()->WorldToMeters : 100.0;
 	const FVector Position = PositionToUnreal(CameraPosition, WorldToMeters);
 	const FQuat Orientation = ToUnreal(CameraRotation);
 
@@ -241,7 +242,7 @@ void UMRUKPassthroughCameraAccessSubsystem::GetCameraPose(EMRUKCameraEye Eye, FV
 
 FMRUKCameraIntrinsics UMRUKPassthroughCameraAccessSubsystem::GetCameraIntrinsics(EMRUKCameraEye Eye) const
 {
-	const int EyeIndex = static_cast<int>(Eye);
+	const int32 EyeIndex = static_cast<int32>(Eye);
 	if (EyeIndex >= TimestampNsMonotonic.Num())
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Invalid Eye passed to GetCameraPose"));
@@ -252,7 +253,7 @@ FMRUKCameraIntrinsics UMRUKPassthroughCameraAccessSubsystem::GetCameraIntrinsics
 
 void UMRUKPassthroughCameraAccessSubsystem::CalcSensorCropRegion(EMRUKCameraEye Eye, double& OutX, double& OutY, double& OutWidth, double& OutHeight)
 {
-	const int EyeIndex = static_cast<int>(Eye);
+	const int32 EyeIndex = static_cast<int32>(Eye);
 	if (EyeIndex >= Textures.Num() || !Textures[EyeIndex] || !Textures[EyeIndex]->PassthroughCameraAccess)
 	{
 		OutX = 0.0f;
@@ -280,7 +281,7 @@ void UMRUKPassthroughCameraAccessSubsystem::CalcSensorCropRegion(EMRUKCameraEye 
 
 void UMRUKPassthroughCameraAccessSubsystem::ViewportPointToWorldSpaceRay(EMRUKCameraEye Eye, FVector2D ViewportPoint, FVector& OutPosition, FVector& OutDirection)
 {
-	const int EyeIndex = static_cast<int>(Eye);
+	const int32 EyeIndex = static_cast<int32>(Eye);
 	if (EyeIndex >= TimestampNsMonotonic.Num())
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Invalid Eye passed to ViewportPointToWorldSpaceRay"));
@@ -318,7 +319,7 @@ void UMRUKPassthroughCameraAccessSubsystem::ViewportPointToWorldSpaceRay(EMRUKCa
 
 FVector2D UMRUKPassthroughCameraAccessSubsystem::WorldToViewportPoint(EMRUKCameraEye Eye, FVector WorldPosition)
 {
-	const int EyeIndex = static_cast<int>(Eye);
+	const int32 EyeIndex = static_cast<int32>(Eye);
 	if (EyeIndex >= TimestampNsMonotonic.Num())
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Invalid Eye passed to WorldToViewportPoint"));
@@ -352,7 +353,7 @@ FVector2D UMRUKPassthroughCameraAccessSubsystem::WorldToViewportPoint(EMRUKCamer
 
 FDateTime UMRUKPassthroughCameraAccessSubsystem::GetTimestamp(EMRUKCameraEye Eye) const
 {
-	const int EyeIndex = static_cast<int>(Eye);
+	const int32 EyeIndex = static_cast<int32>(Eye);
 	if (EyeIndex >= Timestamp.Num())
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Invalid Eye passed to GetTimestamp"));
@@ -363,7 +364,7 @@ FDateTime UMRUKPassthroughCameraAccessSubsystem::GetTimestamp(EMRUKCameraEye Eye
 
 void UMRUKPassthroughCameraAccessSubsystem::AddTexture(UMRUKPassthroughCameraAccessTexture* Texture)
 {
-	const int EyeIndex = static_cast<int>(Texture->PassthroughCameraAccess->CameraEye);
+	const int32 EyeIndex = static_cast<int32>(Texture->PassthroughCameraAccess->CameraEye);
 	if (EyeIndex >= Textures.Num() || Textures[EyeIndex] == Texture)
 	{
 		return;
@@ -380,7 +381,7 @@ void UMRUKPassthroughCameraAccessSubsystem::AddTexture(UMRUKPassthroughCameraAcc
 
 void UMRUKPassthroughCameraAccessSubsystem::RemoveTexture(UMRUKPassthroughCameraAccessTexture* Texture)
 {
-	for (int i = 0; i < Textures.Num(); ++i)
+	for (int32 i = 0; i < Textures.Num(); ++i)
 	{
 		if (Textures[i] == Texture)
 		{
@@ -398,7 +399,6 @@ void UMRUKPassthroughCameraAccessSubsystem::OnWorldPreActorTick(UWorld* World, E
 		return;
 	}
 
-	int i = 0;
 	for (UMRUKPassthroughCameraAccessTexture* Texture : Textures)
 	{
 		if (!Texture)
@@ -406,41 +406,40 @@ void UMRUKPassthroughCameraAccessSubsystem::OnWorldPreActorTick(UWorld* World, E
 			continue;
 		}
 		int64_t TimestampMicrosecondsRealtime = 0;
-		const int EyeIndex = static_cast<int>(Texture->PassthroughCameraAccess->CameraEye);
+		const int32 EyeIndex = static_cast<int32>(Texture->PassthroughCameraAccess->CameraEye);
 		if (EyeIndex >= TimestampNsMonotonic.Num())
 		{
 			UE_LOG(LogMRUK, Error, TEXT("Invalid CameraEye on PassthroughCameraAccess of texture"));
 			continue;
 		}
-		bool Success = false;
-		FPassthroughCameraAccessTextureResource* ResourceParam = static_cast<FPassthroughCameraAccessTextureResource*>(Texture->GetResource());
+		bool bSuccess = false;
+		FPassthroughCameraAccessTextureResource* Resource = static_cast<FPassthroughCameraAccessTextureResource*>(Texture->GetResource());
 #if !PLATFORM_ANDROID
-		if (uint8* Buffer = MRUKShared::GetInstance()->CameraAcquireLatestCpuImage(EyeIndex, &TimestampMicrosecondsRealtime, &TimestampNsMonotonic[EyeIndex]))
+		if (const uint8* Buffer = MRUKShared::GetInstance()->CameraAcquireLatestCpuImage(EyeIndex, &TimestampMicrosecondsRealtime, &TimestampNsMonotonic[EyeIndex]))
 		{
-			Success = true;
+			bSuccess = true;
 			ENQUEUE_RENDER_COMMAND(PcaTextureResourceRender)
-			([Texture, Buffer, ResourceParam](FRHICommandListImmediate& RHICmdList) {
-				check(ResourceParam);
-				ResourceParam->UpdateFromCpuBuffer(RHICmdList, Buffer, Texture->CalcTextureMemorySizeEnum(TMC_ResidentMips));
+			([Texture, Buffer, Resource](FRHICommandListImmediate& RHICmdList) {
+				check(Resource);
+				Resource->UpdateFromCpuBuffer(RHICmdList, Buffer, Texture->CalcTextureMemorySizeEnum(TMC_ResidentMips));
 				MRUKShared::GetInstance()->CameraReleaseLatestCpuImage(static_cast<int>(Texture->PassthroughCameraAccess->CameraEye));
 			});
 		}
 #else
 		if (MRUKShared::GetInstance()->CameraGetLatestImage(static_cast<int>(Texture->PassthroughCameraAccess->CameraEye), &TimestampMicrosecondsRealtime, &TimestampNsMonotonic[EyeIndex]))
 		{
-			Success = true;
+			bSuccess = true;
 			ENQUEUE_RENDER_COMMAND(UpdatePcaTexture)
-			([Texture, ResourceParam](FRHICommandListImmediate& RHICmdList) {
-				ResourceParam->UpdateFromGpuBuffer(RHICmdList);
+			([Texture, Resource](FRHICommandListImmediate& RHICmdList) {
+				Resource->UpdateFromGpuBuffer(RHICmdList);
 				MRUKShared::GetInstance()->CameraUpdateNativeTexture((int)Texture->PassthroughCameraAccess->CameraEye);
 			});
 		}
 #endif
-		if (Success)
+		if (bSuccess)
 		{
-			Timestamp[i] = DateTimeFromUnixMicroseconds(TimestampMicrosecondsRealtime);
+			Timestamp[EyeIndex] = DateTimeFromUnixMicroseconds(TimestampMicrosecondsRealtime);
 		}
-		++i;
 	}
 }
 
@@ -452,7 +451,7 @@ UMRUKPassthroughCameraAccess::UMRUKPassthroughCameraAccess()
 
 bool UMRUKPassthroughCameraAccess::Play()
 {
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	const bool bSuccess = PcaSubsystem->Play(ResolutionWidth, ResolutionHeight, MaxFramerate, CameraEye);
 	if (bSuccess)
 	{
@@ -463,7 +462,7 @@ bool UMRUKPassthroughCameraAccess::Play()
 
 void UMRUKPassthroughCameraAccess::Stop()
 {
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	PcaSubsystem->Stop(CameraEye);
 	PlayState = EMRUKCameraPlayState::Stopped;
 }
@@ -476,7 +475,7 @@ void UMRUKPassthroughCameraAccess::GetCameraPose(FVector& OutPosition, FQuat& Ou
 		OutOrientation = FQuat::Identity;
 		return;
 	}
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	PcaSubsystem->GetCameraPose(CameraEye, OutPosition, OutOrientation);
 }
 
@@ -486,7 +485,7 @@ FMRUKCameraIntrinsics UMRUKPassthroughCameraAccess::GetCameraIntrinsics() const
 	{
 		return {};
 	}
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	return PcaSubsystem->GetCameraIntrinsics(CameraEye);
 }
 
@@ -498,7 +497,7 @@ void UMRUKPassthroughCameraAccess::ViewportPointToWorldSpaceRay(FVector2D Viewpo
 		OutDirection = FVector::ZeroVector;
 		return;
 	}
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	PcaSubsystem->ViewportPointToWorldSpaceRay(CameraEye, ViewportPoint, OutPosition, OutDirection);
 }
 
@@ -508,7 +507,7 @@ FVector2D UMRUKPassthroughCameraAccess::WorldToViewportPoint(FVector WorldPositi
 	{
 		return FVector2D::ZeroVector;
 	}
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	return PcaSubsystem->WorldToViewportPoint(CameraEye, WorldPosition);
 }
 
@@ -518,7 +517,7 @@ FDateTime UMRUKPassthroughCameraAccess::GetTimestamp() const
 	{
 		return {};
 	}
-	const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
+	UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>();
 	return PcaSubsystem->GetTimestamp(CameraEye);
 }
 
@@ -555,14 +554,18 @@ void UMRUKPassthroughCameraAccess::OnResume()
 UMRUKPassthroughCameraAccessTexture::UMRUKPassthroughCameraAccessTexture(FVTableHelper& Helper)
 	: UTexture(Helper)
 {
+#if PLATFORM_ANDROID
 	SRGB = true;
+#else
+	SRGB = false;
+#endif
 }
 
 void UMRUKPassthroughCameraAccessTexture::RegisterTexture()
 {
 	if (GEngine)
 	{
-		if (const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>())
+		if (UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>())
 		{
 			PcaSubsystem->AddTexture(this);
 		}
@@ -573,7 +576,7 @@ void UMRUKPassthroughCameraAccessTexture::UnregisterTexture()
 {
 	if (GEngine)
 	{
-		if (const auto PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>())
+		if (UMRUKPassthroughCameraAccessSubsystem* const PcaSubsystem = GEngine->GetEngineSubsystem<UMRUKPassthroughCameraAccessSubsystem>())
 		{
 			PcaSubsystem->RemoveTexture(this);
 		}
@@ -711,6 +714,11 @@ void FPassthroughCameraAccessTextureResource::CreateTexture(FRHICommandListBase&
 		return;
 	}
 
+	ETextureCreateFlags TextureCreateFlags = ETextureCreateFlags::ShaderResource | ETextureCreateFlags::UAV | ETextureCreateFlags::RenderTargetable;
+#if PLATFORM_ANDROID
+	TextureCreateFlags |= ETextureCreateFlags::SRGB;
+#endif
+
 	// Create texture
 	const static FLazyName ClassName(TEXT("FPassthroughCameraAccessTextureResource"));
 	const FRHITextureCreateDesc Desc =
@@ -718,7 +726,7 @@ void FPassthroughCameraAccessTextureResource::CreateTexture(FRHICommandListBase&
 			.SetExtent({ Owner->GetWidth(), Owner->GetHeight() })
 			.SetFormat(Owner->GetPixelFormat())
 			.SetNumMips(1)
-			.SetFlags(ETextureCreateFlags::ShaderResource | ETextureCreateFlags::UAV | ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::SRGB)
+			.SetFlags(TextureCreateFlags)
 			.SetInitialState(ERHIAccess::SRVMask)
 			.SetClassName(ClassName)
 			.SetOwnerName(GetOwnerName());
@@ -782,7 +790,7 @@ void FPassthroughCameraAccessTextureResource::UpdateTexture(FRHICommandListBase&
 	}
 }
 
-void FPassthroughCameraAccessTextureResource::UpdateFromCpuBuffer(FRHICommandListImmediate& RHICmdList, uint8* Buffer, int BufferSize)
+void FPassthroughCameraAccessTextureResource::UpdateFromCpuBuffer(FRHICommandListImmediate& RHICmdList, const uint8* Buffer, int BufferSize)
 {
 	if (!IsValid(Owner))
 	{

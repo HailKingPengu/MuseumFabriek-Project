@@ -169,4 +169,11 @@ class OCULUSINTERACTION_API UIsdkFunctionLibrary final : public UBlueprintFuncti
 
   UFUNCTION(BlueprintCallable, Category = InteractionSDK)
   static UIsdkGrabbableComponent* FindGrabbableByComponent(USceneComponent* Component);
+
+  /* For a given Interactor(as Scene Component),  return by reference its handedness and
+   * returning true if all components are valid */
+  UFUNCTION(BlueprintCallable, Category = InteractionSDK)
+  static bool GetHandednessFromInteractor(
+      USceneComponent* InteractorIn,
+      EIsdkHandedness& HandednessOut);
 };

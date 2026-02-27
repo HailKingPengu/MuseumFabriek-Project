@@ -2,6 +2,7 @@
 
 #include "OculusXRLayerExtensionPlugin.h"
 #include "Async/Async.h"
+#include "Engine/GameEngine.h"
 #include "DynamicResolutionState.h"
 #include "IHeadMountedDisplay.h"
 #include "IOpenXRHMD.h"
@@ -12,6 +13,10 @@
 #include "OculusXRXRFunctions.h"
 #include "OpenXRCore.h"
 #include "XRThreadUtils.h"
+#include "OculusXRHMD_Layer.h"
+#include "OculusXRResourceHolder.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 namespace
 {
@@ -61,6 +66,7 @@ namespace OculusXR
 		, RecommendedImageHeight_GameThread(0)
 		, Settings_GameThread{}
 		, MaxPixelDensity_RenderThread(0)
+		, bSupportDepthComposite(false)
 	{
 	}
 
@@ -69,6 +75,7 @@ namespace OculusXR
 		OutExtensions.Add(XR_META_LOCAL_DIMMING_EXTENSION_NAME);
 		OutExtensions.Add(XR_FB_COMPOSITION_LAYER_SETTINGS_EXTENSION_NAME);
 		OutExtensions.Add(XR_META_RECOMMENDED_LAYER_RESOLUTION_EXTENSION_NAME);
+		OutExtensions.Add(XR_EXT_COMPOSITION_LAYER_INVERTED_ALPHA_EXTENSION_NAME);
 		return true;
 	}
 
@@ -79,6 +86,7 @@ namespace OculusXR
 			bExtLocalDimmingAvailable = InModule->IsExtensionEnabled(XR_META_LOCAL_DIMMING_EXTENSION_NAME);
 			bExtCompositionLayerSettingsAvailable = InModule->IsExtensionEnabled(XR_FB_COMPOSITION_LAYER_SETTINGS_EXTENSION_NAME);
 			bRecommendedResolutionExtensionAvailable = InModule->IsExtensionEnabled(XR_META_RECOMMENDED_LAYER_RESOLUTION_EXTENSION_NAME);
+			bExtCompositionLayerInvertedAlphaAvailable = InModule->IsExtensionEnabled(XR_EXT_COMPOSITION_LAYER_INVERTED_ALPHA_EXTENSION_NAME);
 		}
 		return IOculusXRExtensionPlugin::OnCreateInstance(InModule, InNext);
 	}
@@ -93,10 +101,17 @@ namespace OculusXR
 			bPixelDensityAdaptive = HMDSettings->bDynamicResolution && bRecommendedResolutionExtensionAvailable;
 #endif
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 			if (IConsoleVariable* MobileDynamicResCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("xr.MobileLDRDynamicResolution")))
 			{
 				MobileDynamicResCVar->Set(bPixelDensityAdaptive);
 			}
+#else
+			if (IConsoleVariable* MobileDynamicResCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("xr.MobilePrimaryScalingMode")))
+			{
+				MobileDynamicResCVar->Set(bPixelDensityAdaptive);
+			}
+#endif
 
 			if (bPixelDensityAdaptive)
 			{
@@ -119,6 +134,12 @@ namespace OculusXR
 					MaxPixelDensity_RenderThread = MaxPixelDensity;
 				});
 			}
+
+#if PLATFORM_ANDROID
+			bSupportDepthComposite = HMDSettings->bCompositeDepthMobile;
+#else
+			bSupportDepthComposite = HMDSettings->bCompositesDepth;
+#endif
 		}
 	}
 
@@ -188,7 +209,163 @@ namespace OculusXR
 				Settings_GameThread->SetPixelDensity(PixelDensityCVar ? PixelDensityCVar->GetFloat() : 1.0f);
 			}
 		}
+
+#if !UE_VERSION_OLDER_THAN(5, 6, 0)
+		TArray<uint32> PokeAHoleLayerIndices;
+		for (int32 LayerIndex = 0; LayerIndex < VisibleLayers.Num(); LayerIndex++)
+		{
+			if (LayerActorMap.Contains(VisibleLayers[LayerIndex]))
+			{
+				PokeAHoleLayerIndices.Add(LayerIndex);
+			}
+		}
+		ENQUEUE_RENDER_COMMAND(OculusXR_UpdatePokeAHoleLayers)
+		([this, PokeAHoleLayerIndices](FRHICommandListImmediate& RHICmdList) mutable {
+			RHICmdList.EnqueueLambda([this, LocalPokeAHoleLayerIndices = MoveTemp(PokeAHoleLayerIndices)](FRHICommandListImmediate& RHICmdList) {
+				PokeAHoleLayerIndices_RHIThread = LocalPokeAHoleLayerIndices;
+			});
+		});
+#endif
 	}
+
+	static UWorld* GetWorld()
+	{
+		UWorld* World = nullptr;
+		for (const FWorldContext& Context : GEngine->GetWorldContexts())
+		{
+			if (Context.WorldType == EWorldType::Game || Context.WorldType == EWorldType::PIE)
+			{
+				World = Context.World();
+			}
+		}
+		return World;
+	}
+
+	bool FLayerExtensionPlugin::LayerNeedsPokeAHole(const IStereoLayers::FLayerDesc& LayerDesc)
+	{
+#if PLATFORM_ANDROID
+		bool bIsPassthroughShape = (LayerDesc.HasShape<FReconstructedLayer>() || LayerDesc.HasShape<FUserDefinedLayer>());
+		return !bIsPassthroughShape && ((LayerDesc.Flags & IStereoLayers::LAYER_FLAG_SUPPORT_DEPTH) != 0);
+#else
+		return false;
+#endif
+	}
+
+	AActor* FLayerExtensionPlugin::CreatePokeAHoleActor(uint32 LayerId, const IStereoLayers::FLayerDesc& LayerDesc)
+	{
+		const FString BaseComponentName = FString::Printf(TEXT("OculusPokeAHole_%d"), LayerId);
+		const FName ComponentName(*BaseComponentName);
+		UProceduralMeshComponent* PokeAHoleComponentPtr;
+
+		UWorld* World = GetWorld();
+
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		AActor* PokeAHoleActor = World->SpawnActor<AActor>();
+
+		PokeAHoleComponentPtr = NewObject<UProceduralMeshComponent>(PokeAHoleActor, ComponentName);
+		PokeAHoleComponentPtr->RegisterComponent();
+
+		TArray<FVector> Vertices;
+		TArray<int32> Triangles;
+		TArray<FVector> Normals;
+		TArray<FVector2D> UV0;
+		TArray<FLinearColor> VertexColors;
+		TArray<FProcMeshTangent> Tangents;
+
+		OculusXRHMD::FLayer::BuildPokeAHoleMesh(LayerDesc, Vertices, Triangles, UV0);
+		PokeAHoleComponentPtr->CreateMeshSection_LinearColor(0, Vertices, Triangles, Normals, UV0, VertexColors, Tangents, false);
+
+		UMaterial* PokeAHoleMaterial = GetDefault<UOculusXRResourceHolder>()->PokeAHoleMaterial;
+		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(PokeAHoleMaterial, nullptr);
+		PokeAHoleComponentPtr->SetMaterial(0, DynamicMaterial);
+
+		PokeAHoleComponentPtr->SetWorldTransform(LayerDesc.Transform);
+		return PokeAHoleActor;
+	}
+
+#if !UE_VERSION_OLDER_THAN(5, 6, 0)
+	void FLayerExtensionPlugin::OnCreateLayer(uint32 LayerId)
+	{
+		OculusXRHMD::CheckInGameThread();
+
+		IStereoLayers* StereoLayers;
+		if (!GEngine->StereoRenderingDevice.IsValid() || (StereoLayers = GEngine->StereoRenderingDevice->GetStereoLayers()) == nullptr)
+		{
+			return;
+		}
+
+		IStereoLayers::FLayerDesc LayerDesc;
+		if (!StereoLayers->GetLayerDesc(LayerId, LayerDesc))
+		{
+			return;
+		}
+
+		if (!bSupportDepthComposite && LayerNeedsPokeAHole(LayerDesc))
+		{
+			if (LayerActorMap.Contains(LayerId))
+			{
+				TWeakObjectPtr<AActor> RemovedActor = LayerActorMap.FindAndRemoveChecked(LayerId);
+				UWorld* World = GetWorld();
+				if (World)
+				{
+					if (RemovedActor.IsValid())
+					{
+						World->DestroyActor(RemovedActor.Get());
+					}
+				}
+			}
+			AActor* PokeAHoleActor = CreatePokeAHoleActor(LayerId, LayerDesc);
+			LayerActorMap.Add(LayerId, PokeAHoleActor);
+		}
+	}
+
+	void FLayerExtensionPlugin::OnDestroyLayer(uint32 LayerId)
+	{
+		OculusXRHMD::CheckInGameThread();
+
+		if (LayerActorMap.Contains(LayerId))
+		{
+			TWeakObjectPtr<AActor> RemovedActor = LayerActorMap.FindAndRemoveChecked(LayerId);
+
+			UWorld* World = GetWorld();
+			if (World)
+			{
+				if (RemovedActor.IsValid())
+				{
+					World->DestroyActor(RemovedActor.Get());
+				}
+			}
+		}
+	}
+
+	void FLayerExtensionPlugin::OnSetLayerDesc(uint32 LayerId)
+	{
+		OculusXRHMD::CheckInGameThread();
+
+		IStereoLayers* StereoLayers;
+		if (!GEngine->StereoRenderingDevice.IsValid() || (StereoLayers = GEngine->StereoRenderingDevice->GetStereoLayers()) == nullptr)
+		{
+			return;
+		}
+
+		IStereoLayers::FLayerDesc LayerDesc;
+		if (!StereoLayers->GetLayerDesc(LayerId, LayerDesc))
+		{
+			return;
+		}
+
+		if (!bSupportDepthComposite && LayerNeedsPokeAHole(LayerDesc))
+		{
+			TWeakObjectPtr<AActor> PokeAHoleActor = LayerActorMap.FindRef(LayerId);
+			UProceduralMeshComponent* MeshComponent = PokeAHoleActor->GetComponentByClass<UProceduralMeshComponent>();
+			MeshComponent->SetWorldTransform(LayerDesc.Transform);
+		}
+	}
+#endif
 
 	const void* FLayerExtensionPlugin::OnEndFrame(XrSession InSession, XrTime DisplayTime, const void* InNext)
 	{
@@ -211,6 +388,13 @@ namespace OculusXR
 #endif
 	{
 		check(IsInRenderingThread() || IsInRHIThread());
+
+		// PokeAHole is enabled and PokeAHoleObjects exist. Ensure these flags are set
+		if (!bSupportDepthComposite && LayerActorMap.Num() > 0)
+		{
+			OutFlags |= XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT | XR_COMPOSITION_LAYER_INVERTED_ALPHA_BIT_EXT | XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT;
+		}
+
 		const void* Next = InNext;
 		if (bExtCompositionLayerSettingsAvailable)
 		{
@@ -340,6 +524,28 @@ namespace OculusXR
 				ColorScaleBias.colorScale = ToXrColor4f(ColorScaleInfo_RHIThread.ColorScale);
 				ColorScaleBias.colorBias = ToXrColor4f(ColorScaleInfo_RHIThread.ColorOffset);
 				const_cast<XrCompositionLayerBaseHeader*>(Header)->next = &ColorScaleBias;
+			}
+		}
+
+		if (Headers.Num() > 1)
+		{
+			int32 FirstProjectionIndex = 0;
+			for (const XrCompositionLayerBaseHeader* Header : Headers)
+			{
+				if (Header->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION)
+				{
+					break;
+				}
+				FirstProjectionIndex++;
+			}
+
+			int32 FirstNonProjectionIndex = FirstProjectionIndex + 1;
+			for (const auto& LayerIndex : PokeAHoleLayerIndices_RHIThread)
+			{
+				int32 PokeAHoleLayerIndex = FirstNonProjectionIndex + LayerIndex;
+				XrCompositionLayerBaseHeader* Header = Headers[PokeAHoleLayerIndex];
+				Headers.RemoveAt(PokeAHoleLayerIndex, EAllowShrinking::No);
+				Headers.Insert(Header, FirstProjectionIndex);
 			}
 		}
 	}

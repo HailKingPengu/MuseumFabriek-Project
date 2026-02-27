@@ -102,9 +102,11 @@ void UOculusXRSceneCaptureCubemap::StartCapture(UWorld* World, uint32 InCaptureB
 
 void UOculusXRSceneCaptureCubemap::Tick(float DeltaTime)
 {
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 	ExecuteOnRenderThread([]() {
 		TickRenderingTickables();
 	});
+#endif
 
 	if (Stage == SettingPos)
 	{

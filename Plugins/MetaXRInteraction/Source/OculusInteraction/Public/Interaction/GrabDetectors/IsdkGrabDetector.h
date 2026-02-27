@@ -64,12 +64,12 @@ class OCULUSINTERACTION_API UIsdkGrabDetector : public UObject
           virtual void Select(EIsdkGrabInputMethod InputMethod);
   virtual void Unselect();
 
-  virtual EIsdkGrabDetectorType GetGrabDetectorType() const
-      PURE_VIRTUAL(UIsdkGrabDetector::GetGrabberTransform, return EIsdkGrabDetectorType::None;)
+ virtual EIsdkGrabDetectorType GetGrabDetectorType() const
+     PURE_VIRTUAL(UIsdkGrabDetector::GetGrabberTransform, return EIsdkGrabDetectorType::None;)
 
-          protected :
+         protected :
 
-      UPROPERTY() TObjectPtr<UIsdkGrabberComponent> GrabberComponent;
+     UPROPERTY() TObjectPtr<UIsdkGrabberComponent> GrabberComponent;
 
   bool bIsSelecting = false;
 };

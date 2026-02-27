@@ -372,6 +372,8 @@ struct MRUKShared
         const char* appDataPath;
         bool flipPcaTextureVertically;
         bool isLinearColorSpace;
+        bool useScenelessWorldLocking;
+        bool disablePcaMockFallback;
     };
 
 
@@ -585,6 +587,7 @@ struct MRUKShared
     Result (*RaycastEnvironment)(const EnvironmentRaycastHitPointGetInfo* info, EnvironmentRaycastHitPoint* hitPoint);
     void (*SetTrackingSpacePoseGetter)(TrackingSpacePoseGetter getter);
     void (*SetTrackingSpacePoseSetter)(TrackingSpacePoseSetter setter);
+    void (*SetUsePersistentWorldLocking)(bool usePersistentWorldLocking);
 
     /// Configures the tracker services. This should only be called after the global context
     /// has been created. The trackers that should be enabled can be passed in trackableMask.
@@ -692,23 +695,17 @@ struct MRUKShared
     /// @param[out] timestampMicrosecondsRealtime Timestamp of the image in microseconds since
     /// the Unix epoch.
     /// @param[out] timestampNsMonotonic Timestamp of the image in monotonic nanoseconds. Used for
-    /// getting the precise headset pose at the image's timestamp.
+    /// getting the precise headset pose at the image's timestamp. Same time base as XrTime
     /// @return A pointer to a buffer containing the RGBA (32 bits, 8 bits per channel) image data. If
     /// null, this means no new image is available.
-    uint8_t* (*CameraAcquireLatestCpuImage)(int eyeIndex, int64_t* timestampMicrosecondsRealtime, int64_t* timestampNsMonotonic);
+    const uint8_t* (*CameraAcquireLatestCpuImage)(int eyeIndex, int64_t* timestampMicrosecondsRealtime, int64_t* timestampNsMonotonic);
 
     /// Releases the image buffer acquired by CameraAcquireLatestImage().
-    /// Must be called even if CameraAcquireLatestImage() returns null.
+    /// Must only be called if CameraAcquireLatestImage() does not return null.
     void (*CameraReleaseLatestCpuImage)(int eyeIndex);
 
-    /// Converts a timestamp in nanoseconds to seconds in XR time domain.
-    ///
-    /// @param[in] timeNsMonotonic The timestamp in nanoseconds (monotonic clock).
-    /// @return The corresponding time in seconds as a double.
-    double (*ConvertToXrTimeInSeconds)(int64_t timeNsMonotonic);
-
     /// Get the headset's pose at the given timestamp
-    /// @param[in] time The timestamp in nanoseconds
+    /// @param[in] time The timestamp in nanoseconds. Same time base as XrTime
     /// @param[out] outPosition The headset position
     /// @param[out] outOrientation The headset orientation
     void (*GetHeadsetPoseAtTime)(int64_t time, FVector3f* outPosition, Quatf* outOrientation);
@@ -759,6 +756,7 @@ private:
         RaycastEnvironment = reinterpret_cast<decltype(RaycastEnvironment)>(LoadFunction(TEXT("RaycastEnvironment")));
         SetTrackingSpacePoseGetter = reinterpret_cast<decltype(SetTrackingSpacePoseGetter)>(LoadFunction(TEXT("SetTrackingSpacePoseGetter")));
         SetTrackingSpacePoseSetter = reinterpret_cast<decltype(SetTrackingSpacePoseSetter)>(LoadFunction(TEXT("SetTrackingSpacePoseSetter")));
+        SetUsePersistentWorldLocking = reinterpret_cast<decltype(SetUsePersistentWorldLocking)>(LoadFunction(TEXT("SetUsePersistentWorldLocking")));
         ConfigureTrackers = reinterpret_cast<decltype(ConfigureTrackers)>(LoadFunction(TEXT("ConfigureTrackers")));
         SetTrackersUpdateInterval = reinterpret_cast<decltype(SetTrackersUpdateInterval)>(LoadFunction(TEXT("SetTrackersUpdateInterval")));
         CheckQrCodeTrackingSupported = reinterpret_cast<decltype(CheckQrCodeTrackingSupported)>(LoadFunction(TEXT("CheckQrCodeTrackingSupported")));
@@ -775,7 +773,6 @@ private:
         CameraStop = reinterpret_cast<decltype(CameraStop)>(LoadFunction(TEXT("CameraStop")));
         CameraAcquireLatestCpuImage = reinterpret_cast<decltype(CameraAcquireLatestCpuImage)>(LoadFunction(TEXT("CameraAcquireLatestCpuImage")));
         CameraReleaseLatestCpuImage = reinterpret_cast<decltype(CameraReleaseLatestCpuImage)>(LoadFunction(TEXT("CameraReleaseLatestCpuImage")));
-        ConvertToXrTimeInSeconds = reinterpret_cast<decltype(ConvertToXrTimeInSeconds)>(LoadFunction(TEXT("ConvertToXrTimeInSeconds")));
         GetHeadsetPoseAtTime = reinterpret_cast<decltype(GetHeadsetPoseAtTime)>(LoadFunction(TEXT("GetHeadsetPoseAtTime")));
     }
 
@@ -823,6 +820,7 @@ private:
         RaycastEnvironment = nullptr;
         SetTrackingSpacePoseGetter = nullptr;
         SetTrackingSpacePoseSetter = nullptr;
+        SetUsePersistentWorldLocking = nullptr;
         ConfigureTrackers = nullptr;
         SetTrackersUpdateInterval = nullptr;
         CheckQrCodeTrackingSupported = nullptr;
@@ -839,7 +837,6 @@ private:
         CameraStop = nullptr;
         CameraAcquireLatestCpuImage = nullptr;
         CameraReleaseLatestCpuImage = nullptr;
-        ConvertToXrTimeInSeconds = nullptr;
         GetHeadsetPoseAtTime = nullptr;
     }
 

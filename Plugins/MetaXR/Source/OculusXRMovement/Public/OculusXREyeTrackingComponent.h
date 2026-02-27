@@ -84,9 +84,6 @@ public:
 private:
 	bool InitializeEyes();
 
-	// One meter in unreal world units.
-	float WorldToMeters;
-
 	// Per eye, eye tracking data
 	TStaticArray<FOculusXREyeTrackingData, static_cast<uint32>(EOculusXREye::COUNT)> PerEyeData;
 

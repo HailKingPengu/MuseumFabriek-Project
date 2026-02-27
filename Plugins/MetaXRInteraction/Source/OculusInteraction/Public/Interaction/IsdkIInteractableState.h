@@ -132,7 +132,6 @@ class OCULUSINTERACTION_API IIsdkIInteractableState
    * Convenience method that returns a pointer to the FIsdkInteractableStateChanged on the
    * implementing object. May return nullptr if the object does not have such an event.
    */
-  virtual FIsdkInteractableStateChanged* GetInteractableStateChangedDelegate()
-      PURE_VIRTUAL(IIsdkIStatefulInteractable::GetInteractableStateChangedDelegate,
-                   return nullptr;);
+  virtual FIsdkInteractableStateChanged* GetInteractableStateChangedDelegate() PURE_VIRTUAL(
+      IIsdkIStatefulInteractable::GetInteractableStateChangedDelegate, return nullptr;);
 };

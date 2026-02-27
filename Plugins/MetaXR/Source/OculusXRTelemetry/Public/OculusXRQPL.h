@@ -20,7 +20,7 @@ namespace OculusXRTelemetry
 	{
 	public:
 		constexpr FTelemetryInstanceKey(const int InstanceKey)
-			: Value(InstanceKey){};
+			: Value(InstanceKey) {};
 
 		constexpr int GetValue() const { return Value; }
 
@@ -36,9 +36,9 @@ namespace OculusXRTelemetry
 
 	public:
 		FTelemetryTimestamp(FDateTime Timestamp)
-			: TotalMs(Timestamp.GetTicks() / OneHundredNsToMs){};
+			: TotalMs(Timestamp.GetTicks() / OneHundredNsToMs) {};
 		constexpr FTelemetryTimestamp(int64 TimestampMs)
-			: TotalMs(TimestampMs){};
+			: TotalMs(TimestampMs) {};
 
 		constexpr int64 GetTimestamp() const { return TotalMs; }
 

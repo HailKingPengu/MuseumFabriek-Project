@@ -25,6 +25,9 @@
 #include "Core/IsdkIGameplayTagContainer.h"
 #include "Input/IsdkIPose.h"
 #include "Interaction/IsdkGrabbableComponent.h"
+#include "Interaction/IsdkInteractorComponent.h"
+#include "Interaction/IsdkSceneInteractorComponent.h"
+
 #include "Runtime/Launch/Resources/Version.h"
 
 TArray<FIsdkBoundsClipper> UIsdkFunctionLibrary::MakeBoundsClippersFromPose(
@@ -322,6 +325,12 @@ UIsdkGrabbableComponent* UIsdkFunctionLibrary::FindGrabbableByComponent(USceneCo
   // Note that if multiple grabbables share the same collider, which grabbable we get here is
   // undefined.
   TArray<UIsdkGrabbableComponent*> Grabbables;
+
+  if (Component->GetOwner() == nullptr)
+  {
+    return nullptr;
+  }
+
   Component->GetOwner()->GetComponents<UIsdkGrabbableComponent>(Grabbables);
   for (const auto Grabbable : Grabbables)
   {
@@ -332,4 +341,42 @@ UIsdkGrabbableComponent* UIsdkFunctionLibrary::FindGrabbableByComponent(USceneCo
   }
 
   return nullptr;
+}
+
+bool UIsdkFunctionLibrary::GetHandednessFromInteractor(
+    USceneComponent* InteractorIn,
+    EIsdkHandedness& HandednessOut)
+{
+  if (InteractorIn == nullptr)
+  {
+    return false;
+  }
+  FGameplayTagContainer InteractorContainer;
+
+  if (UIsdkInteractorComponent* InteractorComponent = Cast<UIsdkInteractorComponent>(InteractorIn))
+  {
+    InteractorContainer = InteractorComponent->InteractorTags;
+  }
+  else if (
+      UIsdkSceneInteractorComponent* SceneInteractorComponent =
+          Cast<UIsdkSceneInteractorComponent>(InteractorIn))
+  {
+    InteractorContainer = SceneInteractorComponent->InteractorTags;
+  }
+  if (InteractorContainer.IsEmpty())
+  {
+    return false;
+  }
+
+  if (InteractorContainer.HasTag(IsdkGameplayTags::TAG_Isdk_Type_Device_Left))
+  {
+    HandednessOut = EIsdkHandedness::Left;
+    return true;
+  }
+  else if (InteractorContainer.HasTag(IsdkGameplayTags::TAG_Isdk_Type_Device_Right))
+  {
+    HandednessOut = EIsdkHandedness::Right;
+    return true;
+  }
+  return false;
 }

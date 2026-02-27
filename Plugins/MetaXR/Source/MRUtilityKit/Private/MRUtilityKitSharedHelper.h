@@ -6,7 +6,6 @@
 #include "MRUtilityKit.h"
 #include "OculusXRAnchorTypes.h"
 #include "OculusXRHMDRuntimeSettings.h"
-#include "OculusXRAnchorTypes.h"
 
 MRUKShared::Uuid ToMrukShared(const FOculusXRUUID& Uuid);
 

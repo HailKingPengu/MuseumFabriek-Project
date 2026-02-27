@@ -96,30 +96,35 @@ namespace
 
 	bool IsActorOrientationHorizontal(const AActor* Actor)
 	{
-		bool bRet = false;
 		if (Actor == nullptr)
-			bRet = false;
-		else if (Actor->GetActorUpVector().Z >= InvSqrt2) // walls, door or similar
-			bRet = false;
-		else if (FMath::Abs(Actor->GetActorUpVector().X) >= InvSqrt2)
-			bRet = true;
-		return bRet;
+		{
+			return false;
+		}
+		if (Actor->GetActorUpVector().Z >= InvSqrt2) // walls, door or similar
+		{
+			return false;
+		}
+		if (FMath::Abs(Actor->GetActorUpVector().X) >= InvSqrt2)
+		{
+			return true;
+		}
+		return false;
 	}
 
-	double CalculatePolygonArea(const TArray<FVector2D>& points)
+	double CalculatePolygonArea(const TArray<FVector2D>& Points)
 	{
-		double Area = 0.0f;
+		double Area = 0.0;
 
 		// Calculate Area using the Shoelace formula
-		for (size_t j = 0; j < points.Num(); ++j)
+		for (int32 j = 0; j < Points.Num(); ++j)
 		{
-			const auto& p1 = points[j];
-			const auto& p2 = points[(j + 1) % points.Num()];
+			const FVector2D& p1 = Points[j];
+			const FVector2D& p2 = Points[(j + 1) % Points.Num()];
 			Area += (p1.X * p2.Y - p2.X * p1.Y);
 		}
 
 		// Take the absolute value and divide by 2
-		return FMath::Abs(Area) * 0.5f;
+		return FMath::Abs(Area) * 0.5;
 	}
 } // namespace
 
@@ -146,7 +151,7 @@ AMRUKAnchor* AMRUKRoom::SpawnAnchor()
 {
 	FActorSpawnParameters SpawnParameters{};
 	SpawnParameters.Owner = this;
-	const auto Anchor = GetWorld()->SpawnActor<AMRUKAnchor>(SpawnParameters);
+	AMRUKAnchor* Anchor = GetWorld()->SpawnActor<AMRUKAnchor>(SpawnParameters);
 	Anchor->Room = this;
 	GetRootComponent()->SetMobility(EComponentMobility::Movable);
 	Anchor->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -236,8 +241,8 @@ void AMRUKRoom::ComputeRoomBounds()
 {
 	RoomBounds.Init();
 
-	const auto L = [this](const TArray<AMRUKAnchor*>& Anchors) {
-		for (AMRUKAnchor* Anchor : Anchors)
+	const auto AddBoundaryPointsToBounds = [this](const TArray<AMRUKAnchor*>& InAnchors) {
+		for (AMRUKAnchor* Anchor : InAnchors)
 		{
 			if (IsValid(Anchor))
 			{
@@ -251,8 +256,8 @@ void AMRUKRoom::ComputeRoomBounds()
 		}
 	};
 
-	L(FloorAnchors);
-	L(CeilingAnchors);
+	AddBoundaryPointsToBounds(FloorAnchors);
+	AddBoundaryPointsToBounds(CeilingAnchors);
 }
 
 void AMRUKRoom::ComputeAnchorHierarchy()
@@ -418,7 +423,7 @@ void AMRUKRoom::ComputeSeats()
 	{
 		if (SeatAnchor)
 		{
-			auto SeatsComponent = SeatAnchor->FindComponentByClass<UMRUKSeatsComponent>();
+			UMRUKSeatsComponent* SeatsComponent = SeatAnchor->FindComponentByClass<UMRUKSeatsComponent>();
 			if (!SeatsComponent)
 			{
 				SeatsComponent = NewObject<UMRUKSeatsComponent>(SeatAnchor, TEXT("Seats"));
@@ -549,7 +554,9 @@ bool AMRUKRoom::GenerateRandomPositionOnSurface(EMRUKSpawnLocation SpawnLocation
 			{
 				bSkipPlane = !bIsHorizontal;
 				if (Anchor->SemanticClassifications.Contains(FMRUKLabels::Ceiling))
+				{
 					bSkipPlane = true;
+				}
 			}
 			else if (SpawnLocation == EMRUKSpawnLocation::AnySurface)
 			{
@@ -580,15 +587,21 @@ bool AMRUKRoom::GenerateRandomPositionOnSurface(EMRUKSpawnLocation SpawnLocation
 
 				// Only top when spawning on top of surfaces. The negative X face corresponds to the top surface.
 				if (SpawnLocation == EMRUKSpawnLocation::OnTopOfSurface && BoxSide != EMRUKBoxSide::XNeg)
+				{
 					continue;
+				}
 
 				// Switch top and bottom faces. The vertical surfaces are the Y and Z faces.
 				if (SpawnLocation == EMRUKSpawnLocation::VerticalSurfaces && FaceIndex < 2)
+				{
 					continue;
+				}
 
 				// Only bottom when spawning on hanging down. The positive X face corresponds to the top surface.
 				if (SpawnLocation == EMRUKSpawnLocation::HangingDown && BoxSide != EMRUKBoxSide::XPos)
+				{
 					continue;
+				}
 
 				FBox2D Bound = GetBoundsFromBoxForSide(BoxSide, Anchor->VolumeBounds);
 
@@ -628,7 +641,9 @@ bool AMRUKRoom::GenerateRandomPositionOnSurface(EMRUKSpawnLocation SpawnLocation
 			FMath::RandRange(Bounds.Min.Y + MinDistanceToEdge, Bounds.Max.Y - MinDistanceToEdge));
 
 		if (IsPlane && !Anchor->IsPositionInBoundary(Pos))
+		{
 			continue;
+		}
 
 		if (IsPlane)
 		{
@@ -809,7 +824,7 @@ AMRUKAnchor* AMRUKRoom::TryGetClosestSeatPose(const FVector& RayOrigin, const FV
 		{
 			continue;
 		}
-		const auto SeatsComponent = SeatAnchor->FindComponentByClass<UMRUKSeatsComponent>();
+		const UMRUKSeatsComponent* SeatsComponent = SeatAnchor->FindComponentByClass<UMRUKSeatsComponent>();
 		if (!SeatsComponent)
 		{
 			continue;
@@ -1149,7 +1164,7 @@ UProceduralMeshComponent* AMRUKRoom::GetOrCreateGlobalMeshProceduralMeshComponen
 	}
 
 	// Create the procedural mesh component if it doesn't exist already
-	const auto ProceduralMesh = NewObject<UProceduralMeshComponent>(GlobalMeshAnchor, TEXT("GlobalMesh"));
+	UProceduralMeshComponent* ProceduralMesh = NewObject<UProceduralMeshComponent>(GlobalMeshAnchor, TEXT("GlobalMesh"));
 	ProceduralMesh->ComponentTags.Add("GlobalMesh");
 	ProceduralMesh->RegisterComponent();
 	GlobalMeshAnchor->AddInstanceComponent(ProceduralMesh);
@@ -1211,7 +1226,7 @@ FVector AMRUKRoom::ComputeCentroid(double Z)
 
 	Z = FMath::Clamp(Z, 0.0, 1.0);
 
-	double TotalArea = 0.0f;
+	double TotalArea = 0.0;
 	FVector2D FloorCentroid = FVector2D::ZeroVector;
 	for (const AMRUKAnchor* Anchor : FloorAnchors)
 	{
@@ -1297,9 +1312,9 @@ TArray<AActor*> AMRUKRoom::SpawnInteriorFromStream(const TMap<FString, FMRUKSpaw
 {
 	TArray<AActor*> InteriorActors;
 
-	const auto ShouldFallbackToProcedural = [GlobalShouldFallbackToProcedural](const FMRUKSpawnGroup* Anchor) -> bool {
-		check(Anchor);
-		switch (Anchor->FallbackToProcedural)
+	const auto ShouldFallbackToProcedural = [GlobalShouldFallbackToProcedural](const FMRUKSpawnGroup* SpawnGroup) -> bool {
+		check(SpawnGroup);
+		switch (SpawnGroup->FallbackToProcedural)
 		{
 			case EMRUKFallbackToProceduralOverwrite::Default:
 				return GlobalShouldFallbackToProcedural;
@@ -1338,7 +1353,7 @@ TArray<AActor*> AMRUKRoom::SpawnInteriorFromStream(const TMap<FString, FMRUKSpaw
 			Anchor->AttachProceduralMesh({ { FVector2D::ZeroVector, Scale } }, CutHoleLabels, true, ProceduralMaterial);
 		}
 	}
-	const auto Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
+	UMRUKSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
 
 	for (const auto& Anchor : AllAnchors)
 	{

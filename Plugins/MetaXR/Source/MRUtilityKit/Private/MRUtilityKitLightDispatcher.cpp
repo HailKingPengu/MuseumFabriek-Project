@@ -42,19 +42,19 @@ void AMRUKLightDispatcher::FillParameterCollection()
 
 	UMaterialParameterCollectionInstance* Instance = GetWorld()->GetParameterCollectionInstance(Collection);
 
-	for (int i = 0; i < PointLightComponents.Num(); i++)
+	for (int LightIndex = 0; LightIndex < PointLightComponents.Num(); LightIndex++)
 	{
-		const UPointLightComponent* Light = PointLightComponents[i];
+		const UPointLightComponent* Light = PointLightComponents[LightIndex];
 		if (!IsValid(Light))
 		{
 			continue;
 		}
 
-		const int Step = i * 3;
+		const int ParameterStep = LightIndex * 3;
 
 		// It's not possible to expand the amount of parameters in collection at runtime,
 		// in case we exceed the count of existing parameters break the loop
-		if (Collection->VectorParameters.Num() < Step + 3)
+		if (Collection->VectorParameters.Num() < ParameterStep + 3)
 		{
 			break;
 		}
@@ -62,18 +62,18 @@ void AMRUKLightDispatcher::FillParameterCollection()
 		// Prepare parameters
 		FCollectionVectorParameter PositionParam, DataParam, ColorParam;
 
-		PositionParam.ParameterName = FName("PointLightPosition" + FString::FromInt(i));
-		DataParam.ParameterName = FName("PointLightData" + FString::FromInt(i));
-		ColorParam.ParameterName = FName("PointLightColor" + FString::FromInt(i));
+		PositionParam.ParameterName = FName("PointLightPosition" + FString::FromInt(LightIndex));
+		DataParam.ParameterName = FName("PointLightData" + FString::FromInt(LightIndex));
+		ColorParam.ParameterName = FName("PointLightColor" + FString::FromInt(LightIndex));
 
 		PositionParam.DefaultValue = FLinearColor(Light->GetComponentLocation());
 		DataParam.DefaultValue = FLinearColor(1.f / Light->AttenuationRadius, Light->ComputeLightBrightness(), Light->LightFalloffExponent, Light->bUseInverseSquaredFalloff);
 		ColorParam.DefaultValue = Light->GetLightColor();
 
 		// Fill collection's vector parameters
-		Collection->VectorParameters[Step] = PositionParam;
-		Collection->VectorParameters[Step + 1] = DataParam;
-		Collection->VectorParameters[Step + 2] = ColorParam;
+		Collection->VectorParameters[ParameterStep] = PositionParam;
+		Collection->VectorParameters[ParameterStep + 1] = DataParam;
+		Collection->VectorParameters[ParameterStep + 2] = ColorParam;
 	}
 
 	// Send count of lights

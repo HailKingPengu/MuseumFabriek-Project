@@ -84,6 +84,8 @@ namespace OculusXRHMD
 		void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture* DstTexture, FRHITexture* SrcTexture, FIntRect DstRect = FIntRect(), FIntRect SrcRect = FIntRect(), bool bAlphaPremultiply = false, bool bNoAlphaWrite = false, bool bInvertY = true, bool sRGBSource = false, bool bInvertAlpha = false);
 		OCULUSXRHMD_API static void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, IRendererModule* RendererModule, FRHITexture* DstTexture, FRHITexture* SrcTexture, FStaticFeatureLevel FeatureLevel, bool bUsingVulkan, FIntRect DstRect = FIntRect(), FIntRect SrcRect = FIntRect(), bool bAlphaPremultiply = false, bool bNoAlphaWrite = false, bool bInvertY = true, bool sRGBSource = false, bool bInvertAlpha = false);
 
+		static OCULUSXRHMD_API void AddInvertTextureAlphaPass(FRDGBuilder& GraphBuilder, FRDGTextureRef Texture, FRDGTextureRef TempTexture, const FIntRect& ViewportRect, FStaticFeatureLevel FeatureLevel, FStaticShaderPlatform ShaderPlatform);
+
 		void SubmitGPUCommands_RenderThread(FRHICommandListImmediate& RHICmdList);
 		virtual void SubmitGPUFrameTime(float GPUFrameTime) {}
 		// This is a hack to turn force FSR off when we allocate our FDM to avoid a crash on Quest 3

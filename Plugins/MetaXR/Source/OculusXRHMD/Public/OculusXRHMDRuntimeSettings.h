@@ -293,6 +293,14 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = "MR Utility Kit")
 	bool EnableWorldLock = true;
 
+	/**
+	 * When "Sceneless World Locking" is enabled the world locking feature is enabled even when
+	 * there is no scene loaded. The underlying mechanism spawns a spatial anchor to world lock against.
+	 * It is recommended to keep this disabled if working on non MR-apps.
+	 */
+	UPROPERTY(config, EditAnywhere, Category = "MR Utility Kit")
+	bool bUseScenelessWorldLocking = false;
+
 private:
 #if WITH_EDITOR
 	virtual bool CanEditChange(const FProperty* InProperty) const override;

@@ -224,6 +224,7 @@ namespace OculusXRRenderingRules
 		virtual void ApplyImpl(bool& OutShouldRestartEditor) override;
 	};
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 	class FDisableAmbientOcclusionRule final : public ISetupRule
 	{
 	public:
@@ -239,6 +240,7 @@ namespace OculusXRRenderingRules
 	protected:
 		virtual void ApplyImpl(bool& OutShouldRestartEditor) override;
 	};
+#endif
 
 	class FEnableMultiViewRule final : public ISetupRule
 	{
@@ -379,7 +381,9 @@ namespace OculusXRRenderingRules
 #endif
 		MakeShared<FDisableLensFlareRule>(),
 		MakeShared<FDisablePostProcessingRule>(),
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 		MakeShared<FDisableAmbientOcclusionRule>(),
+#endif
 		MakeShared<FEnableMultiViewRule>(),
 		MakeShared<FEnableStaticLightingRule>(),
 		MakeShared<FDisableMobileShaderStaticAndCSMShadowReceiversRule>(),

@@ -39,7 +39,7 @@ class OCULUSINTERACTIONPREBUILTS_API UIsdkHideVisualRigModifier : public UIsdkRi
   GENERATED_BODY()
 
  public:
-  UIsdkHideVisualRigModifier(){};
+  UIsdkHideVisualRigModifier() {};
 
   void InitializeRigModifier_Implementation(UIsdkRigComponent* CallingRigComponent) override;
   void ShutdownRigModifier_Implementation(UIsdkRigComponent* CallingRigComponent) override;

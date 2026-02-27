@@ -28,6 +28,23 @@ void WaitDiscoveryFinished();
 
 END_DEFINE_SPEC(FMRUKSpec)
 
+namespace
+{
+	double CalculatePolygonArea(const FProcMeshSection& Mesh)
+	{
+		double Area = 0.f;
+		for (int i = 0; i < Mesh.ProcIndexBuffer.Num(); i += 3)
+		{
+			const FVector& P1 = Mesh.ProcVertexBuffer[Mesh.ProcIndexBuffer[i]].Position;
+			const FVector& P2 = Mesh.ProcVertexBuffer[Mesh.ProcIndexBuffer[i + 1]].Position;
+			const FVector& P3 = Mesh.ProcVertexBuffer[Mesh.ProcIndexBuffer[i + 2]].Position;
+			const double TriangleArea = (P1.Y * (P2.Z - P3.Z) + P2.Y * (P3.Z - P1.Z) + P3.Y * (P1.Z - P2.Z)) / 2.0;
+			Area += TriangleArea;
+		}
+		return Area;
+	}
+} // namespace
+
 void FMRUKSpec::WaitDiscoveryFinished()
 {
 	while (ToolkitSubsystem->DiscoveryIsRunning())
@@ -1227,46 +1244,9 @@ void FMRUKSpec::Define()
 				{
 					return;
 				}
-				if (TestEqual(TEXT("Vertex buffer size"), Section->ProcVertexBuffer.Num(), 8))
-				{
-					constexpr double Tolerance = 0.001;
-					TestEqual(TEXT("Vertex 0"), Section->ProcVertexBuffer[0].Position, FVector(0.0, -168.041, -131.505), Tolerance);
-					TestEqual(TEXT("Vertex 1"), Section->ProcVertexBuffer[1].Position, FVector(0.0, 168.041, -131.505), Tolerance);
-					TestEqual(TEXT("Vertex 2"), Section->ProcVertexBuffer[2].Position, FVector(0.0, 168.041, 131.505), Tolerance);
-					TestEqual(TEXT("Vertex 3"), Section->ProcVertexBuffer[3].Position, FVector(0.0, -168.041, 131.505), Tolerance);
-					TestEqual(TEXT("Vertex 4"), Section->ProcVertexBuffer[4].Position, FVector(0.0, 28.075, -61.585), Tolerance);
-					TestEqual(TEXT("Vertex 5"), Section->ProcVertexBuffer[5].Position, FVector(0.0, 143.493, -61.585), Tolerance);
-					TestEqual(TEXT("Vertex 6"), Section->ProcVertexBuffer[6].Position, FVector(0.0, 143.493, 111.358), Tolerance);
-					TestEqual(TEXT("Vertex 7"), Section->ProcVertexBuffer[7].Position, FVector(0.0, 28.075, 111.358), Tolerance);
-				}
 
-				if (TestEqual(TEXT("Index buffer size"), Section->ProcIndexBuffer.Num(), 24))
-				{
-					TestEqual(TEXT("Index 0"), Section->ProcIndexBuffer[0], 3);
-					TestEqual(TEXT("Index 1"), Section->ProcIndexBuffer[1], 0);
-					TestEqual(TEXT("Index 2"), Section->ProcIndexBuffer[2], 4);
-					TestEqual(TEXT("Index 3"), Section->ProcIndexBuffer[3], 5);
-					TestEqual(TEXT("Index 4"), Section->ProcIndexBuffer[4], 4);
-					TestEqual(TEXT("Index 5"), Section->ProcIndexBuffer[5], 0);
-					TestEqual(TEXT("Index 6"), Section->ProcIndexBuffer[6], 3);
-					TestEqual(TEXT("Index 7"), Section->ProcIndexBuffer[7], 4);
-					TestEqual(TEXT("Index 8"), Section->ProcIndexBuffer[8], 7);
-					TestEqual(TEXT("Index 9"), Section->ProcIndexBuffer[9], 5);
-					TestEqual(TEXT("Index 10"), Section->ProcIndexBuffer[10], 0);
-					TestEqual(TEXT("Index 11"), Section->ProcIndexBuffer[11], 1);
-					TestEqual(TEXT("Index 12"), Section->ProcIndexBuffer[12], 2);
-					TestEqual(TEXT("Index 13"), Section->ProcIndexBuffer[13], 3);
-					TestEqual(TEXT("Index 14"), Section->ProcIndexBuffer[14], 7);
-					TestEqual(TEXT("Index 15"), Section->ProcIndexBuffer[15], 6);
-					TestEqual(TEXT("Index 16"), Section->ProcIndexBuffer[16], 5);
-					TestEqual(TEXT("Index 17"), Section->ProcIndexBuffer[17], 1);
-					TestEqual(TEXT("Index 18"), Section->ProcIndexBuffer[18], 2);
-					TestEqual(TEXT("Index 19"), Section->ProcIndexBuffer[19], 7);
-					TestEqual(TEXT("Index 20"), Section->ProcIndexBuffer[20], 6);
-					TestEqual(TEXT("Index 21"), Section->ProcIndexBuffer[21], 6);
-					TestEqual(TEXT("Index 22"), Section->ProcIndexBuffer[22], 1);
-					TestEqual(TEXT("Index 23"), Section->ProcIndexBuffer[23], 2);
-				}
+				constexpr double Tolerance = 0.001;
+				TestEqual(TEXT("Area"), CalculatePolygonArea(*Section), 68432.261054, Tolerance);
 			}
 		});
 

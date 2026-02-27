@@ -10,7 +10,7 @@
 
 #include "Engine/GameInstance.h"
 
-const FName GMRUK_PROCEDURAL_ANCHOR_MESH_TAG = TEXT("MRUKProceduralAnchorMesh");
+const FName GMrukProceduralAnchorMeshTag = TEXT("MRUKProceduralAnchorMesh");
 
 namespace
 {
@@ -18,7 +18,7 @@ namespace
 	{
 		AActor* Actor = Anchor->GetWorld()->SpawnActor<AActor>();
 		Actor->SetOwner(Anchor);
-		Actor->Tags.AddUnique(GMRUK_PROCEDURAL_ANCHOR_MESH_TAG);
+		Actor->Tags.AddUnique(GMrukProceduralAnchorMeshTag);
 		Actor->SetRootComponent(NewObject<USceneComponent>(Actor, TEXT("Root")));
 		Actor->GetRootComponent()->SetMobility(EComponentMobility::Movable);
 		Actor->AttachToComponent(Anchor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -46,7 +46,7 @@ void AMRUKAnchorActorSpawner::BeginPlay()
 
 	if (SpawnMode == EMRUKSpawnMode::CurrentRoomOnly)
 	{
-		const auto Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
+		UMRUKSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
 		if (Subsystem->SceneLoadStatus == EMRUKInitStatus::Complete)
 		{
 			SpawnActors(Subsystem->GetCurrentRoom());
@@ -59,8 +59,8 @@ void AMRUKAnchorActorSpawner::BeginPlay()
 	}
 	else if (SpawnMode == EMRUKSpawnMode::AllRooms)
 	{
-		const auto Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
-		for (auto Room : Subsystem->Rooms)
+		UMRUKSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
+		for (AMRUKRoom* Room : Subsystem->Rooms)
 		{
 			SpawnActors(Room);
 		}
@@ -135,9 +135,9 @@ bool AMRUKAnchorActorSpawner::ShouldAnchorFallbackToProceduralMesh(const FMRUKSp
 TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshesOnWallsIfNoWallActorGiven(AMRUKRoom* Room)
 {
 	TArray<AActor*> Actors;
-	const auto WallFace = SpawnGroups.Find(FMRUKLabels::WallFace);
-	const auto InnerWallFace = SpawnGroups.Find(FMRUKLabels::InnerWallFace);
-	const auto OtherRoomFace = SpawnGroups.Find(FMRUKLabels::OtherRoomFace);
+	const FMRUKSpawnGroup* WallFace = SpawnGroups.Find(FMRUKLabels::WallFace);
+	const FMRUKSpawnGroup* InnerWallFace = SpawnGroups.Find(FMRUKLabels::InnerWallFace);
+	const FMRUKSpawnGroup* OtherRoomFace = SpawnGroups.Find(FMRUKLabels::OtherRoomFace);
 
 	const bool SpawnWalls = (!WallFace || (WallFace->Actors.IsEmpty() && ShouldAnchorFallbackToProceduralMesh(*WallFace)))
 		&& (!InnerWallFace || (InnerWallFace->Actors.IsEmpty() && ShouldAnchorFallbackToProceduralMesh(*InnerWallFace)))
@@ -148,7 +148,7 @@ TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshesOnWallsIfNoWallAct
 		// If no wall mesh is given we want to spawn the walls procedural to make seamless UVs
 		TArray<FMRUKAnchorWithPlaneUVs> AnchorsWithPlaneUVs;
 		Room->ComputeWallMeshUVAdjustments({}, AnchorsWithPlaneUVs);
-		for (const auto& AnchorWithPlaneUVs : AnchorsWithPlaneUVs)
+		for (const FMRUKAnchorWithPlaneUVs& AnchorWithPlaneUVs : AnchorsWithPlaneUVs)
 		{
 			Actors.Push(SpawnProceduralMesh(AnchorWithPlaneUVs.Anchor, AnchorWithPlaneUVs.PlaneUVs, CutHoleLabels, ProceduralMaterial));
 		}
@@ -159,7 +159,7 @@ TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshesOnWallsIfNoWallAct
 TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshOnFloorIfNoFloorActorGiven(AMRUKRoom* Room)
 {
 	TArray<AActor*> Actors;
-	const auto Floor = SpawnGroups.Find(FMRUKLabels::Floor);
+	const FMRUKSpawnGroup* Floor = SpawnGroups.Find(FMRUKLabels::Floor);
 	if ((Room->FloorAnchors.Num() > 0) && (!Floor || (Floor->Actors.IsEmpty() && ShouldAnchorFallbackToProceduralMesh(*Floor))))
 	{
 		// Use metric scaling to match walls
@@ -177,7 +177,7 @@ TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshOnFloorIfNoFloorActo
 TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshOnCeilingIfNoCeilingActorGiven(AMRUKRoom* Room)
 {
 	TArray<AActor*> Actors;
-	const auto Ceiling = SpawnGroups.Find(FMRUKLabels::Ceiling);
+	const FMRUKSpawnGroup* Ceiling = SpawnGroups.Find(FMRUKLabels::Ceiling);
 	if ((Room->CeilingAnchors.Num() > 0) && (!Ceiling || (Ceiling->Actors.IsEmpty() && ShouldAnchorFallbackToProceduralMesh(*Ceiling))))
 	{
 		// Use metric scaling to match walls
@@ -238,7 +238,7 @@ TArray<AActor*> AMRUKAnchorActorSpawner::SpawnProceduralMeshesInRoom(AMRUKRoom* 
 	TArray<AActor*> CeilingActors = SpawnProceduralMeshOnCeilingIfNoCeilingActorGiven(Room);
 	Actors.Append(CeilingActors);
 
-	for (const auto& Anchor : Room->AllAnchors)
+	for (AMRUKAnchor* Anchor : Room->AllAnchors)
 	{
 		if (Anchor->HasLabel(FMRUKLabels::Floor) || Anchor->HasLabel(FMRUKLabels::Ceiling) || Anchor->HasLabel(FMRUKLabels::WallFace) || Anchor->HasLabel(FMRUKLabels::InnerWallFace) || Anchor->HasLabel(FMRUKLabels::OtherRoomFace))
 		{
@@ -271,9 +271,9 @@ bool AMRUKAnchorActorSpawner::SelectSpawnActorClosestSize(AMRUKAnchor* Anchor, c
 			double ClosestSizeDifference = UE_BIG_NUMBER;
 			for (int i = 0; i < SpawnGroup.Actors.Num(); ++i)
 			{
-				const auto& SpawnActor = SpawnGroup.Actors[i];
-				const auto Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
-				auto Bounds = Subsystem->GetActorClassBounds(SpawnActor.Actor);
+				const FMRUKSpawnActor& SpawnActor = SpawnGroup.Actors[i];
+				UMRUKSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
+				FBox Bounds = Subsystem->GetActorClassBounds(SpawnActor.Actor);
 				if (Bounds.IsValid)
 				{
 					const double SpawnActorSize = FMath::Pow(Bounds.GetVolume(), 1.0 / 3.0);
@@ -326,7 +326,7 @@ bool AMRUKAnchorActorSpawner::SelectSpawnActorFromSpawnGroup(AMRUKAnchor* Anchor
 
 void AMRUKAnchorActorSpawner::AttachAndFitActorToAnchor(AMRUKAnchor* Anchor, AActor* Actor, EMRUKSpawnerScalingMode ScalingMode, EMRUKAlignMode AlignMode, bool bCalculateFacingDirection, bool bMatchAspectRatio)
 {
-	auto ActorRoot = Actor->GetRootComponent();
+	USceneComponent* ActorRoot = Actor->GetRootComponent();
 	if (!ActorRoot)
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Spawned actor does not have a root component."));
@@ -336,7 +336,7 @@ void AMRUKAnchorActorSpawner::AttachAndFitActorToAnchor(AMRUKAnchor* Anchor, AAc
 	Actor->AttachToComponent(Anchor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	Actor->SetActorRelativeScale3D(FVector::OneVector);
 
-	const auto ChildLocalBounds = Actor->CalculateComponentsBoundingBoxInLocalSpace(true);
+	const FBox ChildLocalBounds = Actor->CalculateComponentsBoundingBoxInLocalSpace(true);
 	FQuat Rotation = FQuat::Identity;
 	FVector Offset = FVector::ZeroVector;
 	FVector Scale = FVector::OneVector;
@@ -494,7 +494,7 @@ void AMRUKAnchorActorSpawner::AttachAndFitActorToAnchor(AMRUKAnchor* Anchor, AAc
 	}
 	else if (Anchor->PlaneBounds.bIsValid)
 	{
-		const auto XAxis = Anchor->GetTransform().GetUnitAxis(EAxis::X);
+		const FVector XAxis = Anchor->GetTransform().GetUnitAxis(EAxis::X);
 		// Adjust the rotation so that Z always points up. This enables assets to be authored in a more natural
 		// way and show up in the scene as expected.
 		if (XAxis.Z <= -UE_INV_SQRT_2)
@@ -513,9 +513,9 @@ void AMRUKAnchorActorSpawner::AttachAndFitActorToAnchor(AMRUKAnchor* Anchor, AAc
 			Rotation = FQuat::MakeFromEuler(FVector(0, 0, 180));
 		}
 
-		const auto ChildBounds = ChildLocalBounds.TransformBy(FTransform(Rotation));
-		const auto ChildBounds2D = FBox2D(FVector2D(ChildBounds.Min.Y, ChildBounds.Min.Z), FVector2D(ChildBounds.Max.Y, ChildBounds.Max.Z));
-		auto Scale2D = Anchor->PlaneBounds.GetSize() / ChildBounds2D.GetSize();
+		const FBox ChildBounds = ChildLocalBounds.TransformBy(FTransform(Rotation));
+		const FBox2D ChildBounds2D = FBox2D(FVector2D(ChildBounds.Min.Y, ChildBounds.Min.Z), FVector2D(ChildBounds.Max.Y, ChildBounds.Max.Z));
+		FVector2D Scale2D = Anchor->PlaneBounds.GetSize() / ChildBounds2D.GetSize();
 
 		switch (ScalingMode)
 		{
@@ -621,7 +621,7 @@ bool AMRUKAnchorActorSpawner::ShouldSpawnActorForAnchor(AMRUKAnchor* Anchor, con
 		return false;
 	}
 
-	const auto SpawnGroup = SpawnGroups.Find(Label);
+	const FMRUKSpawnGroup* SpawnGroup = SpawnGroups.Find(Label);
 	if (!SpawnGroup)
 	{
 		return false;
@@ -657,7 +657,7 @@ TArray<AActor*> AMRUKAnchorActorSpawner::SpawnAnchorActorsInRoom_Implementation(
 
 	SpawnedActorsInRoom.Append(SpawnProceduralMeshesInRoom(Room));
 
-	for (const auto& Anchor : Room->AllAnchors)
+	for (AMRUKAnchor* Anchor : Room->AllAnchors)
 	{
 		if (!IsValid(Anchor))
 		{
@@ -721,7 +721,7 @@ void AMRUKAnchorActorSpawner::SpawnActors(AMRUKRoom* Room)
 	const TArray<AActor*>& Actors = SpawnAnchorActorsInRoom(Room, RandomStream);
 	SpawnedActors.Add(Room, Actors);
 
-	const auto Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
+	UMRUKSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMRUKSubsystem>();
 	Subsystem->OnRoomUpdated.AddUniqueDynamic(this, &AMRUKAnchorActorSpawner::OnRoomUpdated);
 	Subsystem->OnRoomRemoved.AddUniqueDynamic(this, &AMRUKAnchorActorSpawner::OnRoomRemoved);
 
@@ -738,7 +738,7 @@ void AMRUKAnchorActorSpawner::GetSpawnedActorsByRoom(AMRUKRoom* Room, TArray<AAc
 
 void AMRUKAnchorActorSpawner::GetSpawnedActors(TArray<AActor*>& Actors)
 {
-	for (const auto& KeyValue : SpawnedActors)
+	for (const TPair<AMRUKRoom*, TArray<AActor*>>& KeyValue : SpawnedActors)
 	{
 		Actors.Append(KeyValue.Value);
 	}

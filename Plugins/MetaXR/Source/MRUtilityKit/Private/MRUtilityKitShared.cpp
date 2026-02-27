@@ -61,10 +61,10 @@ void MRUKShared::FreeMRUKSharedLibrary()
 
 void* MRUKShared::LoadFunction(const TCHAR* ProcName)
 {
-	auto func = FPlatformProcess::GetDllExport(MRUKSharedHandle, ProcName);
-	if (func == nullptr)
+	auto function = FPlatformProcess::GetDllExport(MRUKSharedHandle, ProcName);
+	if (function == nullptr)
 	{
 		UE_LOG(LogMRUK, Error, TEXT("Failed to load native function: %s"), ProcName);
 	}
-	return func;
+	return function;
 }

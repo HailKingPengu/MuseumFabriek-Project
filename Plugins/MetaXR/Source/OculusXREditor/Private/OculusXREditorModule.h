@@ -21,7 +21,7 @@ class FOculusXREditorModule : public IOculusXREditorModule
 {
 public:
 	FOculusXREditorModule()
-		: bModuleValid(false){};
+		: bModuleValid(false) {};
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;

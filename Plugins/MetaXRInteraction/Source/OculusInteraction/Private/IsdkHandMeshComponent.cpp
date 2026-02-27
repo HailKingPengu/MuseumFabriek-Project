@@ -455,14 +455,16 @@ void UIsdkHandMeshComponent::UpdateSkeleton()
       FTransform BoneTransform = GetBoneTransformByName(BoneName, WristSpace);
       if ((uint8)HandPoseLerpState > 0)
       {
-        BoneTransform.SetLocation(FMath::Lerp(
-            SourcePoses[BoneId].GetLocation(),
-            OverridePoses[BoneId].GetLocation(),
-            HandPoseLerpAlpha));
-        BoneTransform.SetRotation(FMath::Lerp(
-            SourcePoses[BoneId].GetRotation(),
-            OverridePoses[BoneId].GetRotation(),
-            HandPoseLerpAlpha));
+        BoneTransform.SetLocation(
+            FMath::Lerp(
+                SourcePoses[BoneId].GetLocation(),
+                OverridePoses[BoneId].GetLocation(),
+                HandPoseLerpAlpha));
+        BoneTransform.SetRotation(
+            FMath::Lerp(
+                SourcePoses[BoneId].GetRotation(),
+                OverridePoses[BoneId].GetRotation(),
+                HandPoseLerpAlpha));
       }
       else
       {

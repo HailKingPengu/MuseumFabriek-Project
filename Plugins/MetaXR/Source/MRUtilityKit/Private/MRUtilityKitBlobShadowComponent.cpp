@@ -84,8 +84,17 @@ void UMRUKBlobShadowComponent::UpdatePlaneSizeAndPosition()
 	FHitResult Hit;
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
-	const bool bHasHit = UKismetSystemLibrary::SphereTraceSingle(this, Origin, Origin + FVector::DownVector * MaxVerticalDistance, Extent.Length() * 0.5f, TraceTypeQuery1,
-		true, ActorsToIgnore, EDrawDebugTrace::None, Hit, true);
+	const bool bHasHit = UKismetSystemLibrary::SphereTraceSingle(
+		this,
+		Origin,
+		Origin + FVector::DownVector * MaxVerticalDistance,
+		Extent.Length() * 0.5f,
+		TraceTypeQuery1,
+		true,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		Hit,
+		true);
 	float Opacity = 0.f;
 	if (bHasHit)
 	{

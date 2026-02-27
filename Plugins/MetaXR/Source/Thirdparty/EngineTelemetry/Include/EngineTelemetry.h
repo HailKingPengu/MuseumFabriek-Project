@@ -190,4 +190,21 @@ ENGINE_TELEMETRY_API telemetryBool engineTelemetry_GetMachineID(char* machineId)
 
 #ifdef __cplusplus
 }
+
+#include <optional>
+#include <string>
+
+namespace EngineTelemetry {
+
+int Telemetry_CreateMetadataHandle();
+bool Telemetry_SetMetadata(const char* key, const char* value, int handle);
+bool Telemetry_SetMetadataInt(const char* key, int value, int handle);
+bool Telemetry_SetMetadataFloat(const char* key, float value, int handle);
+bool Telemetry_SetMetadataDouble(const char* key, double value, int handle);
+bool Telemetry_SetMetadataBool(const char* key, bool value, int handle);
+std::optional<std::string> Telemetry_GetMetadata(int handle);
+bool Telemetry_ClearMetadata(int handle);
+
+} // namespace EngineTelemetry
+
 #endif

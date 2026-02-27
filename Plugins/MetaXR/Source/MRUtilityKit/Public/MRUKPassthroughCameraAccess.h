@@ -310,7 +310,7 @@ public:
 
 	MRUTILITYKIT_API virtual void ReleaseRHI() override;
 
-	MRUTILITYKIT_API void UpdateFromCpuBuffer(FRHICommandListImmediate& RHICmdList, uint8* Buffer, int BufferSize);
+	MRUTILITYKIT_API void UpdateFromCpuBuffer(FRHICommandListImmediate& RHICmdList, const uint8* Buffer, int BufferSize);
 
 	MRUTILITYKIT_API void UpdateFromGpuBuffer(FRHICommandListImmediate& RHICmdList);
 

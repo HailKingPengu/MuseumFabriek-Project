@@ -7,7 +7,7 @@
 #include "SceneViewExtension.h"
 #include "XRSwapChain.h"
 
-#if (defined(WITH_OCULUS_BRANCH) || defined(WITH_OPENXR_BRANCH))
+#if (defined(WITH_OCULUS_BRANCH) || defined(WITH_OPENXR_BRANCH)) && UE_VERSION_OLDER_THAN(5, 7, 0)
 
 DECLARE_LOG_CATEGORY_EXTERN(LogOculusSpaceWarpExtensionPlugin, Log, All);
 

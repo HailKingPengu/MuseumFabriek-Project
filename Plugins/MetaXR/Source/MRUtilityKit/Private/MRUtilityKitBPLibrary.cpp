@@ -275,15 +275,17 @@ bool UMRUKBPLibrary::LoadGlobalMeshFromDevice(FOculusXRUInt64 SpaceHandle, UProc
 void UMRUKBPLibrary::RecalculateProceduralMeshAndTangents(UProceduralMeshComponent* Mesh)
 {
 	if (!IsValid(Mesh))
-		return;
-
-	for (int s = 0; s < Mesh->GetNumSections(); ++s)
 	{
-		FProcMeshSection* Section = Mesh->GetProcMeshSection(s);
+		return;
+	}
+
+	for (int32 SectionIndex = 0; SectionIndex < Mesh->GetNumSections(); ++SectionIndex)
+	{
+		FProcMeshSection* Section = Mesh->GetProcMeshSection(SectionIndex);
 
 		// Get vertices of the section
 		TArray<FVector> Vertices;
-		for (FProcMeshVertex Vertex : Section->ProcVertexBuffer)
+		for (const FProcMeshVertex& Vertex : Section->ProcVertexBuffer)
 		{
 			Vertices.Add(Vertex.Position);
 		}
@@ -295,7 +297,7 @@ void UMRUKBPLibrary::RecalculateProceduralMeshAndTangents(UProceduralMeshCompone
 		TArray<FColor> EmptyVertexColors;
 
 		// Update mesh section
-		Mesh->UpdateMeshSection(s, Vertices, Normals, EmptyUV, EmptyVertexColors, Tangents);
+		Mesh->UpdateMeshSection(SectionIndex, Vertices, Normals, EmptyUV, EmptyVertexColors, Tangents);
 	}
 }
 
@@ -322,12 +324,12 @@ FVector2D UMRUKBPLibrary::ComputeCentroid(const TArray<FVector2D>& PolygonPoints
 	}
 
 	double SignedArea = 0.0;
-	for (int32 I = 0; I < PolygonPoints.Num(); ++I)
+	for (int32 PointIndex = 0; PointIndex < PolygonPoints.Num(); ++PointIndex)
 	{
-		const double X0 = PolygonPoints[I].X;
-		const double Y0 = PolygonPoints[I].Y;
-		const double X1 = PolygonPoints[(I + 1) % PolygonPoints.Num()].X;
-		const double Y1 = PolygonPoints[(I + 1) % PolygonPoints.Num()].Y;
+		const double X0 = PolygonPoints[PointIndex].X;
+		const double Y0 = PolygonPoints[PointIndex].Y;
+		const double X1 = PolygonPoints[(PointIndex + 1) % PolygonPoints.Num()].X;
+		const double Y1 = PolygonPoints[(PointIndex + 1) % PolygonPoints.Num()].Y;
 
 		const double A = X0 * Y1 - X1 * Y0;
 		SignedArea += A;
@@ -349,16 +351,16 @@ FVector UMRUKBPLibrary::ComputeDirectionAwayFromClosestWall(const AMRUKAnchor* A
 	double ClosestWallDistance = DBL_MAX;
 	FVector AwayFromWall{};
 
-	for (int i = 0; i < 4; ++i)
+	for (int32 AxisIndex = 0; AxisIndex < 4; ++AxisIndex)
 	{
-		if (ExcludedAxes.Contains(i))
+		if (ExcludedAxes.Contains(AxisIndex))
 		{
 			continue;
 		}
 		// Shoot a ray along the cardinal directions
 		// The "Up" (i.e. Z axis) for anchors typically points away from the facing direction, but it depends
 		// entirely on how the user defined the volume in scene capture.
-		const auto CardinalAxis = (FQuat::MakeFromEuler({ 0.0, 0.0, 90.0 * i }).RotateVector(Anchor->GetActorUpVector()));
+		const FVector CardinalAxis = (FQuat::MakeFromEuler({ 0.0, 0.0, 90.0 * AxisIndex }).RotateVector(Anchor->GetActorUpVector()));
 
 		for (const auto& WallAnchor : Anchor->Room->WallAnchors)
 		{
@@ -371,12 +373,12 @@ FVector UMRUKBPLibrary::ComputeDirectionAwayFromClosestWall(const AMRUKAnchor* A
 			{
 				continue;
 			}
-			const auto DistToWall = FVector::Distance(Hit.HitPosition, Anchor->GetActorLocation());
+			const double DistToWall = FVector::Distance(Hit.HitPosition, Anchor->GetActorLocation());
 			if (DistToWall < ClosestWallDistance)
 			{
 				ClosestWallDistance = DistToWall;
 				AwayFromWall = -CardinalAxis;
-				OutCardinalAxisIndex = i;
+				OutCardinalAxisIndex = AxisIndex;
 			}
 		}
 	}
@@ -386,9 +388,9 @@ FVector UMRUKBPLibrary::ComputeDirectionAwayFromClosestWall(const AMRUKAnchor* A
 
 UTexture2D* UMRUKBPLibrary::ConstructTexture2D(UTextureRenderTarget2D* RenderTarget2D, UObject* Outer, const FString& TexName)
 {
-	const auto SizeX = RenderTarget2D->SizeX;
-	const auto SizeY = RenderTarget2D->SizeY;
-	const auto Tex = UTexture2D::CreateTransient(SizeX, SizeY, RenderTarget2D->GetFormat());
+	const int32 SizeX = RenderTarget2D->SizeX;
+	const int32 SizeY = RenderTarget2D->SizeY;
+	UTexture2D* Tex = UTexture2D::CreateTransient(SizeX, SizeY, RenderTarget2D->GetFormat());
 	Tex->AddToRoot();
 	Tex->Filter = TF_Bilinear;
 	Tex->CompressionSettings = TC_Default;
@@ -452,9 +454,9 @@ void UMRUKBPLibrary::CreateMeshSegmentation(const TArray<FVector>& MeshPositions
 		&MeshSegmentsCount, &ReservedMeshSegmentF);
 
 	OutSegments.Reserve(MeshSegmentsCount);
-	for (uint32_t i = 0; i < MeshSegmentsCount; ++i)
+	for (uint32_t SegmentIndex = 0; SegmentIndex < MeshSegmentsCount; ++SegmentIndex)
 	{
-		const MRUKShared::Mesh3f& SegmentF = MeshSegmentsF[i];
+		const MRUKShared::Mesh3f& SegmentF = MeshSegmentsF[SegmentIndex];
 		if (SegmentF.numIndices == 0)
 		{
 			continue;
@@ -463,13 +465,13 @@ void UMRUKBPLibrary::CreateMeshSegmentation(const TArray<FVector>& MeshPositions
 		FMRUKMeshSegment MeshSegment{};
 		MeshSegment.Indices.Reserve(SegmentF.numIndices);
 		MeshSegment.Positions.Reserve(SegmentF.numVertices);
-		for (uint32_t j = 0; j < SegmentF.numIndices; ++j)
+		for (uint32_t IndexIndex = 0; IndexIndex < SegmentF.numIndices; ++IndexIndex)
 		{
-			MeshSegment.Indices.Add(SegmentF.indices[j]);
+			MeshSegment.Indices.Add(SegmentF.indices[IndexIndex]);
 		}
-		for (uint32_t j = 0; j < SegmentF.numVertices; ++j)
+		for (uint32_t VertexIndex = 0; VertexIndex < SegmentF.numVertices; ++VertexIndex)
 		{
-			const FVector3f& V = SegmentF.vertices[j];
+			const FVector3f& V = SegmentF.vertices[VertexIndex];
 			MeshSegment.Positions.Add({ V.X, V.Y, V.Z });
 		}
 
@@ -480,13 +482,13 @@ void UMRUKBPLibrary::CreateMeshSegmentation(const TArray<FVector>& MeshPositions
 	{
 		OutReservedSegment.Indices.Reserve(ReservedMeshSegmentF.numIndices);
 		OutReservedSegment.Positions.Reserve(ReservedMeshSegmentF.numVertices);
-		for (uint32_t j = 0; j < ReservedMeshSegmentF.numIndices; ++j)
+		for (uint32_t IndexIndex = 0; IndexIndex < ReservedMeshSegmentF.numIndices; ++IndexIndex)
 		{
-			OutReservedSegment.Indices.Add(ReservedMeshSegmentF.indices[j]);
+			OutReservedSegment.Indices.Add(ReservedMeshSegmentF.indices[IndexIndex]);
 		}
-		for (uint32_t j = 0; j < ReservedMeshSegmentF.numVertices; ++j)
+		for (uint32_t VertexIndex = 0; VertexIndex < ReservedMeshSegmentF.numVertices; ++VertexIndex)
 		{
-			const FVector3f& V = ReservedMeshSegmentF.vertices[j];
+			const FVector3f& V = ReservedMeshSegmentF.vertices[VertexIndex];
 			OutReservedSegment.Positions.Add({ V.X, V.Y, V.Z });
 		}
 	}

@@ -20,6 +20,6 @@
 
 #include "Subsystem/IsdkITrackingDataSubsystem.h"
 
-EControllerHandBehavior IIsdkITrackingDataSubsystem::GetControllerHandBehavior()
-    PURE_VIRTUAL(IIsdkITrackingDataSubsystem::SetControllerHandBehavior,
-                 return EControllerHandBehavior::BothProcedural;)
+EControllerHandBehavior IIsdkITrackingDataSubsystem::GetControllerHandBehavior() PURE_VIRTUAL(
+    IIsdkITrackingDataSubsystem::SetControllerHandBehavior,
+    return EControllerHandBehavior::BothProcedural;)

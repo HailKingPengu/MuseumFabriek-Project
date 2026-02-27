@@ -247,6 +247,7 @@ namespace OculusXRRenderingRules
 		OutShouldRestartEditor = true;
 	}
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 	bool FDisableAmbientOcclusionRule::IsApplied() const
 	{
 		const URendererSettings* Settings = GetMutableDefault<URendererSettings>();
@@ -259,6 +260,7 @@ namespace OculusXRRenderingRules
 		OCULUSXR_UPDATE_SETTINGS(URendererSettings, bMobileAmbientOcclusion, 0);
 		OutShouldRestartEditor = true;
 	}
+#endif
 
 	bool FEnableMultiViewRule::IsApplied() const
 	{
@@ -342,15 +344,22 @@ namespace OculusXRRenderingRules
 		// check if GPUScene conflicts with any existing features: EUB or ULL
 		return !((RenderSettings->bMobileSupportGPUScene && RenderSettings->bVulkanUseEmulatedUBs)
 			|| (RenderSettings->bMobileSupportGPUScene && RenderSettings->bMobileUniformLocalLights)
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 			|| (RenderSettings->bMobileSupportGPUScene && RenderSettings->bMobileSupportSpaceWarp)
+#endif
 			|| (RenderSettings->bMobileSupportGPUScene && RenderSettings->bSupportsXRSoftOcclusions)
 			|| (RenderSettings->bMobileSupportGPUScene && OculusXRSettings->bLateLatching));
 	}
 
 	void FDisableMobileGPUSceneRule::ApplyImpl(bool& OutShouldRestartEditor)
 	{
+#ifdef PROJECT_CVAR_MOBILE_SUPPORTS_GPUSCENE
+		UE_LOG(LogProjectSetupTool, Error, TEXT("Project build files define PROJECT_CVAR_MOBILE_SUPPORTS_GPUSCENE. You will need to modify your build files to change it."));
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("OculusXRRenderingRules", "Rendering_MobileGPUScene_DefinedInBuild", "Project build files define PROJECT_CVAR_MOBILE_SUPPORTS_GPUSCENE. You will need to modify your build files to change it."));
+#else
 		OCULUSXR_UPDATE_SETTINGS(URendererSettings, bMobileSupportGPUScene, false);
 		OutShouldRestartEditor = true;
+#endif
 	}
 
 	bool FDisableMobileGPUSceneRule::IsValid()

@@ -92,6 +92,7 @@ static TAutoConsoleVariable<int32> CVarOculusIncreaseThreadPrio(
 			TEXT("1: Use increased thread priority provided by runtime (Default)\n"),
 	ECVF_Scalability | ECVF_RenderThreadSafe);
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 // AppSpaceWarp
 static TAutoConsoleVariable<int32> CVarOculusEnableSpaceWarpUser(
 	TEXT("r.Mobile.Oculus.SpaceWarp.Enable"),
@@ -99,6 +100,15 @@ static TAutoConsoleVariable<int32> CVarOculusEnableSpaceWarpUser(
 	TEXT("0 Disable spacewarp at runtime.\n")
 		TEXT("1 Enable spacewarp at runtime.\n"),
 	ECVF_Scalability | ECVF_RenderThreadSafe);
+#else
+static FAutoConsoleVariableDeprecated CVarOculusEnableSpaceWarpUser_Deprecated(
+	TEXT("r.Mobile.Oculus.SpaceWarp.Enable"),
+	TEXT("xr.OpenXRFrameSynthesis"),
+	TEXT("5.7"),
+	EShadowCVarBehavior::Error,
+	EShadowCVarBehavior::Error,
+	TEXT("Oculus SpaceWarp has been integrated into Unreal and is now enabled with xr.OpenXRFrameSynthesis"));
+#endif
 
 // Foveated Rendering
 static TAutoConsoleVariable<int32> CVarOculusFoveatedRenderingMethod(
@@ -1779,7 +1789,6 @@ namespace OculusXRHMD
 
 	void FOculusXRHMD::SendTelemetryData()
 	{
-		UE_LOG(LogHMD, Log, TEXT("Collecting Telemetry Data"));
 		FString TelemetryParam;
 #if WITH_EDITOR && PLATFORM_WINDOWS
 		// Implementing telemetry to monitor the adoption rate of multiplayer testing.
@@ -1817,9 +1826,12 @@ namespace OculusXRHMD
 			OculusXRTelemetry::SendEvent("OcclusionCulling", RendererSettings->bOcclusionCulling != 0);
 		}
 
+		static const auto GpuSceneCVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.Mobile.SupportGPUScene"));
+		const bool bMobileSupportGPUScene = GpuSceneCVar && GpuSceneCVar->GetValueOnAnyThread();
+
 		OculusXRTelemetry::SendEvent("MobileTonemap", IsMobileTonemapSubpassEnabled(Settings->CurrentShaderPlatform));
 		OculusXRTelemetry::SendEvent("MobileHDR", RendererSettings->bMobilePostProcessing != 0);
-		OculusXRTelemetry::SendEvent("GPUScene", RendererSettings->bMobileSupportGPUScene != 0);
+		OculusXRTelemetry::SendEvent("GPUScene", bMobileSupportGPUScene);
 		OculusXRTelemetry::SendEvent("XrApi", Settings->XrApi == EOculusXRXrApi::OVRPluginOpenXR ? "OVRPluginOpenXR" : "NativeOpenXR");
 	}
 
@@ -2206,8 +2218,12 @@ namespace OculusXRHMD
 		return false;
 	}
 
-#if defined(WITH_OCULUS_BRANCH) || defined(WITH_OPENXR_BRANCH)
+#if !UE_VERSION_OLDER_THAN(5, 7, 0) || (defined(WITH_OCULUS_BRANCH) || defined(WITH_OPENXR_BRANCH))
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 	bool FOculusXRHMD::GetRecommendedVelocityTextureSize(FIntPoint& OutTextureSize)
+#else
+	bool FOculusXRHMD::GetRecommendedMotionVectorTextureSize(FIntPoint& OutTextureSize)
+#endif
 	{
 		CheckInRenderThread();
 
@@ -2229,7 +2245,11 @@ namespace OculusXRHMD
 		return false;
 	}
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 	bool FOculusXRHMD::AllocateVelocityTexture(uint32 Index, const FIntPoint& Size, uint8 Format, uint32 NumMips, ETextureCreateFlags TexFlags, FTextureRHIRef& OutTexture, uint32 NumSamples)
+#else
+	bool FOculusXRHMD::GetMotionVectorTexture(uint32 Index, const FIntPoint& Size, uint8 Format, uint32 NumMips, ETextureCreateFlags TexFlags, FTextureRHIRef& OutTexture, uint32 NumSamples)
+#endif
 	{
 		CheckInRenderThread();
 		check(Index == 0);
@@ -2260,7 +2280,11 @@ namespace OculusXRHMD
 		return false;
 	}
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 	bool FOculusXRHMD::AllocateVelocityDepthTexture(uint32 Index, const FIntPoint& Size, uint8 Format, uint32 NumMips, ETextureCreateFlags TexFlags, FTextureRHIRef& OutTexture, uint32 NumSamples)
+#else
+	bool FOculusXRHMD::GetMotionVectorDepthTexture(uint32 Index, const FIntPoint& Size, uint8 Format, uint32 NumMips, ETextureCreateFlags TexFlags, FTextureRHIRef& OutTexture, uint32 NumSamples)
+#endif
 	{
 		CheckInRenderThread();
 		check(Index == 0);
@@ -2290,7 +2314,7 @@ namespace OculusXRHMD
 		OutTexture = nullptr;
 		return false;
 	}
-#endif // defined(WITH_OCULUS_BRANCH)
+#endif // asw
 
 #if defined(WITH_OCULUS_BRANCH)
 	bool FOculusXRHMD::FindEnvironmentDepthTexture_RenderThread(FTextureRHIRef& OutTexture, FTextureRHIRef& OutMinMaxTexture, FVector2f& OutDepthFactors, FMatrix44f OutScreenToDepthMatrices[2], FMatrix44f OutDepthViewProjMatrices[2])
@@ -2631,8 +2655,13 @@ namespace OculusXRHMD
 	void FOculusXRHMD::SetupViewFamily(FSceneViewFamily& InViewFamily)
 	{
 		InViewFamily.EngineShowFlags.StereoRendering = IsStereoEnabled();
-#if defined(WITH_OCULUS_BRANCH) || defined(WITH_OPENXR_BRANCH)
+#if (defined(WITH_OCULUS_BRANCH) || defined(WITH_OPENXR_BRANCH)) && UE_VERSION_OLDER_THAN(5, 7, 0)
 		InViewFamily.bRenderStereoVelocity = SupportsSpaceWarp() ? CVarOculusEnableSpaceWarpUser.GetValueOnAnyThread() != 0 : false;
+#elif !UE_VERSION_OLDER_THAN(5, 7, 0)
+		static FShaderPlatformCachedIniValue<bool> FrameSynthesisIniValue(TEXT("xr.OpenXRFrameSynthesis"));
+		const bool bFrameSynthesisCVarEnabled = FrameSynthesisIniValue.Get(InViewFamily.GetShaderPlatform());
+
+		InViewFamily.EngineShowFlags.StereoMotionVectors = bFrameSynthesisCVarEnabled && SupportsSpaceWarp();
 #endif // defined(WITH_OCULUS_BRANCH)
 	}
 
@@ -3325,10 +3354,17 @@ namespace OculusXRHMD
 
 		FOculusXRHMDModule::GetPluginWrapper().Update3(ovrpStep_Render, 0, 0.0);
 
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 		if (IConsoleVariable* MobileDynamicResCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("xr.MobileLDRDynamicResolution")))
 		{
 			MobileDynamicResCVar->Set(static_cast<bool>(Settings->Flags.bPixelDensityAdaptive));
 		}
+#else
+		if (IConsoleVariable* MobileDynamicResCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("xr.MobilePrimaryScalingMode")))
+		{
+			MobileDynamicResCVar->Set<int>(Settings->Flags.bPixelDensityAdaptive);
+		}
+#endif
 		if (Settings->Flags.bPixelDensityAdaptive)
 		{
 			static const auto DynamicResOperationCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("r.DynamicRes.OperationMode"));
@@ -3690,7 +3726,14 @@ namespace OculusXRHMD
 			bool bSpaceWarp = false;
 			if (SupportsSpaceWarp())
 			{
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 				bSpaceWarp = CVarOculusEnableSpaceWarpUser.GetValueOnAnyThread() != 0;
+#else
+				static FShaderPlatformCachedIniValue<bool> FrameSynthesisIniValue(TEXT("xr.OpenXRFrameSynthesis"));
+				const bool bFrameSynthesisCVarEnabled = FrameSynthesisIniValue.Get(Settings->CurrentShaderPlatform);
+
+				bSpaceWarp = bFrameSynthesisCVarEnabled;
+#endif
 			}
 			EyeLayer->SetEyeLayerDesc(EyeLayerDesc, bSpaceWarp);
 			EyeLayer->bNeedsTexSrgbCreate = Settings->Flags.bsRGBEyeBuffer;
@@ -5235,8 +5278,9 @@ namespace OculusXRHMD
 			Settings->bDynamicFoveatedRendering ? TEXT("Enabled") : TEXT("Disabled"),
 			Settings->GetPixelDensityMin(),
 			Settings->GetPixelDensityMax());
-		const URendererSettings* RendererSettings = GetMutableDefault<URendererSettings>();
-		UE_LOG(LogHMD, Log, TEXT("GPUScene: %s"), RendererSettings->bMobileSupportGPUScene ? TEXT("Enabled") : TEXT("Disabled"));
+		static const auto GpuSceneCVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.Mobile.SupportGPUScene"));
+		const bool bMobileSupportGPUScene = GpuSceneCVar && GpuSceneCVar->GetValueOnAnyThread();
+		UE_LOG(LogHMD, Log, TEXT("GPUScene: %s"), bMobileSupportGPUScene ? TEXT("Enabled") : TEXT("Disabled"));
 	}
 	/// @endcond
 

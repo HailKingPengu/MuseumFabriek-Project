@@ -12,6 +12,10 @@
 #include "CommonRenderResources.h"
 #include "RHIStaticStates.h"
 
+#if !UE_VERSION_OLDER_THAN(5, 6, 0)
+#include "XRCopyTexture.h"
+#endif
+
 #if PLATFORM_ANDROID
 #include "Android/AndroidJNI.h"
 #include "Android/AndroidApplication.h"
@@ -738,6 +742,59 @@ namespace OculusXRHMD
 				}
 				RHICmdList.EndRenderPass();
 			}
+		}
+	}
+
+	void FCustomPresent::AddInvertTextureAlphaPass(FRDGBuilder& GraphBuilder, FRDGTextureRef Texture, FRDGTextureRef TempTexture, const FIntRect& ViewportRect, FStaticFeatureLevel FeatureLevel, FStaticShaderPlatform ShaderPlatform)
+	{
+		{
+			FRDGTextureRef SrcTexture = Texture;
+			FRDGTextureRef DstTexture = TempTexture;
+			const FIntRect SrcRect(ViewportRect);
+			const FIntRect DstRect(0, 0, ViewportRect.Size().X, ViewportRect.Size().Y);
+
+#if !UE_VERSION_OLDER_THAN(5, 6, 0)
+			FXRCopyTextureOptions Options(FeatureLevel, ShaderPlatform);
+			Options.BlendMod = EXRCopyTextureBlendModifier::InvertAlpha;
+			AddXRCopyTexturePass(GraphBuilder, RDG_EVENT_NAME("OculusXRHMD_InvertAlpha"), SrcTexture, SrcRect, DstTexture, DstRect, Options);
+#else
+			AddPass(GraphBuilder, RDG_EVENT_NAME("OculusXR_InvertTextureAlpha"), [SrcTexture, DstTexture, SrcRect, DstRect](FRHICommandListImmediate& RHICmdList) {
+				const bool bAlphaPremultiply = false;
+				const bool bNoAlphaWrite = false;
+				const bool bInvertSrcY = false;
+				const bool sRGBSource = false;
+				const bool bInvertAlpha = true;
+				const bool bUsingVulkan = RHIGetInterfaceType() == ERHIInterfaceType::Vulkan;
+				const FStaticFeatureLevel FeatureLevel = GMaxRHIFeatureLevel;
+
+				static const FName RendererModuleName("Renderer");
+				IRendererModule* RendererModulePtr = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
+
+				OculusXRHMD::FCustomPresent::CopyTexture_RenderThread(RHICmdList, RendererModulePtr, DstTexture->GetRHI(), SrcTexture->GetRHI(),
+					FeatureLevel, bUsingVulkan, DstRect, SrcRect, bAlphaPremultiply, bNoAlphaWrite, bInvertSrcY, sRGBSource, bInvertAlpha);
+			});
+#endif
+		}
+
+		{
+			FRHICopyTextureInfo CopyInfo;
+			CopyInfo.Size = FIntVector(ViewportRect.Size().X, ViewportRect.Size().Y, 1);
+			CopyInfo.SourcePosition = FIntVector::ZeroValue;
+			CopyInfo.DestPosition = FIntVector(ViewportRect.Min.X, ViewportRect.Min.Y, 0);
+			CopyInfo.SourceSliceIndex = 0;
+			CopyInfo.DestSliceIndex = 0;
+
+			FRDGTextureRef SrcTexture = TempTexture;
+			FRDGTextureRef DstTexture = Texture;
+			const FRHITextureDesc& SrcDesc = SrcTexture->Desc;
+			const FRHITextureDesc& DstDesc = DstTexture->Desc;
+
+			if (SrcDesc.IsTextureArray() && DstDesc.IsTextureArray())
+			{
+				CopyInfo.NumSlices = FMath::Min(SrcDesc.ArraySize, DstDesc.ArraySize);
+			}
+
+			::AddCopyTexturePass(GraphBuilder, SrcTexture, DstTexture, CopyInfo);
 		}
 	}
 

@@ -63,7 +63,7 @@ enum class EMRUKSpawnerSelectionMode : uint8
 	Random,
 	/// Pick the closest size.
 	ClosestSize,
-	/// Used in the AMRUKAnchorActorSpawner to use allow for a custom selection mode.
+	/// Used in the AMRUKAnchorActorSpawner to allow for a custom selection mode.
 	Custom,
 };
 
@@ -78,7 +78,7 @@ enum class EMRUKSpawnerScalingMode : uint8
 	UniformXYScale,
 	/// Don't perform any scaling.
 	NoScaling,
-	/// Used in the AMRUKAnchorActorSpawner to use allow for a custom scaling.
+	/// Used in the AMRUKAnchorActorSpawner to allow for a custom scaling.
 	Custom,
 };
 
@@ -167,7 +167,7 @@ struct MRUTILITYKIT_API FMRUKHit
 
 /**
  * Label filter to use in MRUK (Mixed Reality Utility Kit). You can use this to filter anchors by their labels.
- * use the IncludedLabels and ExcludedLabels list to specify which labels to include and exclude.
+ * Use the IncludedLabels and ExcludedLabels list to specify which labels to include and exclude.
  */
 USTRUCT(BlueprintType)
 struct MRUTILITYKIT_API FMRUKLabelFilter
@@ -298,7 +298,7 @@ struct MRUTILITYKIT_API FMRUKSpawnActor
 };
 
 /**
- * This enum is used to specify the fallback behaviour when spawning an scene actor.
+ * This enum is used to specify the fallback behaviour when spawning a scene actor.
  * Specify whether to fallback to a procedural mesh or not.
  */
 UENUM(BlueprintType)
@@ -470,7 +470,7 @@ struct MRUTILITYKIT_API FMRUKEnvironmentRaycastHit
 };
 
 /**
- * UE Module interface impelmentation
+ * UE Module interface implementation
  */
 class FMRUKModule : public IModuleInterface
 {

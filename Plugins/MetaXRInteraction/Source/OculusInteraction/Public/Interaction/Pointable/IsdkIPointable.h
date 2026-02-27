@@ -49,8 +49,8 @@ class OCULUSINTERACTION_API IIsdkIPointable
   // Add interface functions to this class. This is the class that will be inherited to implement
   // this interface.
  public:
-  virtual FIsdkInteractionPointerEventDelegate& GetInteractionPointerEventDelegate()
-      PURE_VIRTUAL(IIsdkIPointable::GetInteractorPointerEventDelegate,
-                   static FIsdkInteractionPointerEventDelegate Default;
-                   return Default;);
+  virtual FIsdkInteractionPointerEventDelegate& GetInteractionPointerEventDelegate() PURE_VIRTUAL(
+      IIsdkIPointable::GetInteractorPointerEventDelegate,
+      static FIsdkInteractionPointerEventDelegate Default;
+      return Default;);
 };

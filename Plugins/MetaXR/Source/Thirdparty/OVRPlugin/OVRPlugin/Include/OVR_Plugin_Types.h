@@ -29,7 +29,7 @@
 // Note: OVRP_MINOR_VERSION == OCULUS_SDK_VERSION + 32
 
 #define OVRP_MAJOR_VERSION 1
-#define OVRP_MINOR_VERSION 115
+#define OVRP_MINOR_VERSION 117
 #define OVRP_PATCH_VERSION 0
 
 #define OVRP_VERSION OVRP_MAJOR_VERSION, OVRP_MINOR_VERSION, OVRP_PATCH_VERSION
@@ -3981,6 +3981,7 @@ typedef struct ovrpFutureCompletion_ {
 } ovrpFutureCompletion;
 
 typedef void (*ovrpOpenXrEventHandler)(void* data, void* context);
+typedef void (*ovrpShutdownEventHandler)(void* context);
 
 typedef enum {
   ovrpApertureType_Immersive,

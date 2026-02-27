@@ -311,8 +311,6 @@ static void SharedLibraryLogPrinter(MRUKShared::LogLevel Level, const char* Mess
 	switch (Level)
 	{
 		case MRUKShared::LogLevel::Debug:
-			UE_LOG(LogMRUK, Verbose, TEXT("MRUK Shared: %.*hs"), Length, Message);
-			break;
 		case MRUKShared::LogLevel::Info:
 			UE_LOG(LogMRUK, Log, TEXT("MRUK Shared: %.*hs"), Length, Message);
 			break;
@@ -343,6 +341,7 @@ void UMRUKSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	MRUKShared::Config MrukConfig{};
 	MrukConfig.isLinearColorSpace = true;
+	MrukConfig.useScenelessWorldLocking = Settings->bUseScenelessWorldLocking;
 	MRUKShared::Result result = MRUKShared::GetInstance()->CreateGlobalContext(&MrukConfig);
 	if (result != MRUKShared::Result::Success)
 	{

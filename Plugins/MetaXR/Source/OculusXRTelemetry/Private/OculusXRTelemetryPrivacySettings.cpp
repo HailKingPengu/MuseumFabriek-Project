@@ -4,6 +4,7 @@
 
 #include "OculusXRTelemetryModule.h"
 #include "OculusXRTelemetry.h"
+#include "Misc/EngineVersionComparison.h"
 
 #include <regex>
 
@@ -86,7 +87,11 @@ FString UOculusXRTelemetryPrivacySettings::GetAdditionalInfoUrl() const
 {
 	if (Links.Num() > 0)
 	{
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 		return Links.begin().Value();
+#else
+		return Links.begin()->Value;
+#endif
 	}
 	return FString();
 }
@@ -95,7 +100,11 @@ FText UOculusXRTelemetryPrivacySettings::GetAdditionalInfoUrlLabel() const
 {
 	if (Links.Num() > 0)
 	{
+#if UE_VERSION_OLDER_THAN(5, 7, 0)
 		return FText::FromString(Links.begin().Key());
+#else
+		return FText::FromString(Links.begin()->Key);
+#endif
 	}
 	return FText();
 }

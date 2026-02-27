@@ -34,10 +34,11 @@ class OCULUSXRPASSTHROUGH_API UOculusXRPassthroughLayerBase : public UStereoLaye
 public:
 	/**
 	 * Specifies whether passthrough should appear on top of (when \ref LayerOrder is `PassthroughLayerOrder_Overlay`)
-	 * or beneath (when \ref LayerOrder is `PassthroughLayerOrder_Underlay`) the virtual content. The default is `Overlay`.
+	 * or beneath (when \ref LayerOrder is `PassthroughLayerOrder_Underlay`) the virtual content. The default is `Underlay`.
+	 * `Overlay` is deprecated.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Passthrough Properties", DisplayName = "Layer Placement")
-	TEnumAsByte<enum EOculusXRPassthroughLayerOrder> LayerOrder;
+	TEnumAsByte<enum EOculusXRPassthroughLayerOrder> LayerOrder = PassthroughLayerOrder_Underlay;
 
 	/**
 	 * Defines the passthrough opacity. It can be used to blend between passthrough and VR when \ref LayerOrder is set to `Overlay`,
@@ -207,7 +208,8 @@ public:
 
 	/**
 	 * Specifies whether passthrough should appear on top of (\ref PassthroughLayerOrder_Overlay)
-	 * or beneath (\ref PassthroughLayerOrder_Underlay) the virtual content. The default is `Overlay`.
+	 * or beneath (\ref PassthroughLayerOrder_Underlay) the virtual content. The default is `Underlay`.
+	 * `Overlay` is deprecated.
 	 * See \ref LayerOrder property for more details */
 	UFUNCTION(BlueprintCallable, Category = "Passthrough Properties")
 	void SetLayerPlacement(EOculusXRPassthroughLayerOrder InLayerOrder);

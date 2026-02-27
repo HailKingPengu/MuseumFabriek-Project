@@ -450,7 +450,7 @@ void FMetaXRSimulator::ToggleOpenXRRuntime()
 		}
 
 		auto Version = AvailableVersions.FindByPredicate([PreferredVersion](const FMetaXRSimulatorVersion& Element) {
-			return Element.Version.StartsWith(PreferredVersion);
+			return Element.Version.Equals(PreferredVersion);
 		});
 
 		if (Version == nullptr)
