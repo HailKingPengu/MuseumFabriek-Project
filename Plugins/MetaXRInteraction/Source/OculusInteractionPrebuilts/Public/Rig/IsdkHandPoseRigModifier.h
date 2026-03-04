@@ -40,7 +40,7 @@ class OCULUSINTERACTIONPREBUILTS_API UIsdkHandPoseRigModifier : public UIsdkRigM
   GENERATED_BODY()
 
  public:
-  UIsdkHandPoseRigModifier() {};
+  UIsdkHandPoseRigModifier(){};
 
   void InitializeRigModifier_Implementation(UIsdkRigComponent* CallingRigComponent) override;
   void ShutdownRigModifier_Implementation(UIsdkRigComponent* CallingRigComponent) override;

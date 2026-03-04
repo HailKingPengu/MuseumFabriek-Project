@@ -460,7 +460,6 @@ void UIsdkGrabTransformerComponent::EndTransform()
             bRetainGravityWhenThrown ? bHadGravity : !bHadGravity);
 
         ThrowableComponent->StopTracking();
-        GrabThrowEvent.Broadcast(this, ThrowableComponent);
       }
     }
   }

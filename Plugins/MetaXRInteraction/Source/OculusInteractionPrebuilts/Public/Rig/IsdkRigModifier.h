@@ -44,7 +44,7 @@ class OCULUSINTERACTIONPREBUILTS_API UIsdkRigModifier : public UObject
   GENERATED_BODY()
 
  public:
-  UIsdkRigModifier() {};
+  UIsdkRigModifier(){};
 
   /**
    * @brief Called by the RigComponent during initialization (Implementable in Blueprint or C++)

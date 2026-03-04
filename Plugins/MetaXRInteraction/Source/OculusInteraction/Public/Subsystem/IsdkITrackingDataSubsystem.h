@@ -132,8 +132,8 @@ class OCULUSINTERACTION_API IIsdkITrackingDataSubsystem
   virtual FIsdkTrackingDataSources GetOrCreateControllerDataSourceComponent_Implementation(
       UMotionControllerComponent* SourceMotionController,
       EIsdkHandedness Handedness)
-      PURE_VIRTUAL(
-          IIsdkITrackingDataSubsystem::GetOrCreateControllerDataSourceComponent, return {};);
+      PURE_VIRTUAL(IIsdkITrackingDataSubsystem::GetOrCreateControllerDataSourceComponent,
+                   return {};);
   /**
    * @brief Creates a new scene component that acts as a data source for the head mounted display.
    *        The method returns the interface that should be used to query HMD data.
