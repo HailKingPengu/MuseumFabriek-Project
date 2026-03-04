@@ -74,13 +74,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     UIsdkGrabTransformerComponent*,
     GrabTransformer);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-    FIsdkGrabThrowEventDelegate,
-    const UIsdkGrabTransformerComponent*,
-    GrabTransformer,
-    const UIsdkThrowable*,
-    ThrowableComponent);
-
 /**
  * UIsdkGrabTransformer handles transform and throw behavior for grabbable components.  It does not
  * provide or handle the detection of grab events.  It works only if there is at least one
@@ -305,12 +298,6 @@ class OCULUSINTERACTION_API UIsdkGrabTransformerComponent : public UActorCompone
    */
   UPROPERTY(BlueprintAssignable, Category = InteractionSDK)
   FIsdkCancelGrabEventDelegate CancelGrabEvent;
-
-  /**
-   * GrabThrowEvent fires when a throw of a grabbable has taken place
-   */
-  UPROPERTY(BlueprintAssignable, Category = InteractionSDK)
-  FIsdkGrabThrowEventDelegate GrabThrowEvent;
 
   /**
    * The transformer responsible for handling single-grabber behavior.  Deprecated v74.

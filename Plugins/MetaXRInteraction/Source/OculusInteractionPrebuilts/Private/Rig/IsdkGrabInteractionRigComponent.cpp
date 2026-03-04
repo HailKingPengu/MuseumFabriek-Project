@@ -20,7 +20,6 @@
 
 #include "Rig/IsdkGrabInteractionRigComponent.h"
 
-#include "IsdkRuntimeSettings.h"
 #include "OculusInteractionPrebuiltsLog.h"
 #include "Core/IsdkConditionalComponentIsActive.h"
 #include "Core/IsdkConditionalGroupAll.h"
@@ -61,17 +60,6 @@ void UIsdkGrabInteractionRigComponent::InitializeComponent()
       IsValid(RigComponent),
       TEXT("UIsdkGrabInteractionRigComponent must be a child of an UIsdkRigComponent"));
   AddTickPrerequisiteComponent(RigComponent);
-
-  // Propagate handedness tags to interactor
-  EIsdkHandedness ThisRigHandedness = RigComponent->GetHandedness();
-  if (ThisRigHandedness == EIsdkHandedness::Left)
-  {
-    Grabber->InteractorTags.AddTag(IsdkGameplayTags::TAG_Isdk_Type_Device_Left);
-  }
-  else if (ThisRigHandedness == EIsdkHandedness::Right)
-  {
-    Grabber->InteractorTags.AddTag(IsdkGameplayTags::TAG_Isdk_Type_Device_Right);
-  }
 }
 
 void UIsdkGrabInteractionRigComponent::BeginPlay()

@@ -45,7 +45,7 @@ class OCULUSINTERACTIONPREBUILTS_API UIsdkPokeLimiterRigModifier : public UIsdkR
   GENERATED_BODY()
 
  public:
-  UIsdkPokeLimiterRigModifier() {};
+  UIsdkPokeLimiterRigModifier(){};
 
   void InitializeRigModifier_Implementation(UIsdkRigComponent* CallingRigComponent) override;
   void ShutdownRigModifier_Implementation(UIsdkRigComponent* CallingRigComponent) override;

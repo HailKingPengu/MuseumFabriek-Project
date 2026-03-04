@@ -99,7 +99,7 @@ class OCULUSINTERACTION_API UIsdkConditionalGroup : public UIsdkConditional
   }
 
  protected:
-  UIsdkConditionalGroup() {};
+  UIsdkConditionalGroup(){};
   /**
    * @brief Iterate through stored Conditionals and return a resolved value
    * @return bool The calculated boolean value of the stored Conditionals

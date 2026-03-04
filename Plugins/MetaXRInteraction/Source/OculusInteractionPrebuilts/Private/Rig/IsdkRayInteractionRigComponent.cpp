@@ -19,8 +19,6 @@
  */
 
 #include "Rig/IsdkRayInteractionRigComponent.h"
-
-#include "IsdkRuntimeSettings.h"
 #include "OculusInteractionPrebuiltsLog.h"
 #include "Interaction/IsdkRayInteractor.h"
 #include "Core/IsdkConditionalGroupAll.h"
@@ -64,17 +62,6 @@ void UIsdkRayInteractionRigComponent::InitializeComponent()
       IsValid(RigComponent),
       TEXT("UIsdkRayInteractionRigComponent must be a child of an UIsdkRigComponent"));
   AddTickPrerequisiteComponent(RigComponent);
-
-  // Propagate handedness tags to interactor
-  EIsdkHandedness ThisRigHandedness = RigComponent->GetHandedness();
-  if (ThisRigHandedness == EIsdkHandedness::Left)
-  {
-    RayInteractor->InteractorTags.AddTag(IsdkGameplayTags::TAG_Isdk_Type_Device_Left);
-  }
-  else if (ThisRigHandedness == EIsdkHandedness::Right)
-  {
-    RayInteractor->InteractorTags.AddTag(IsdkGameplayTags::TAG_Isdk_Type_Device_Right);
-  }
 }
 
 void UIsdkRayInteractionRigComponent::BeginPlay()
