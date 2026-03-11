@@ -162,10 +162,9 @@ void UIsdkInputActionsRigComponent::CheckForErrors()
     FMessageLog("MapCheck")
         .Warning()
         ->AddToken(FUObjectToken::Create(this))
-        ->AddToken(
-            FTextToken::Create(LOCTEXT(
-                "MapCheck_Message_IsdkInputActionsRigComponent",
-                "SelectStrengthAction field must be set.")));
+        ->AddToken(FTextToken::Create(LOCTEXT(
+            "MapCheck_Message_IsdkInputActionsRigComponent",
+            "SelectStrengthAction field must be set.")));
   }
 #undef LOCTEXT_NAMESPACE
 }

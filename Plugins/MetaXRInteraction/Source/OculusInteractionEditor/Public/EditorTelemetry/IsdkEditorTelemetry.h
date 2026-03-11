@@ -34,8 +34,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogOculusInteractionEditorTelemetry, Log, All);
 class OCULUSINTERACTIONEDITOR_API FIsdkEditorTelemetry
 {
  public:
-  FIsdkEditorTelemetry() {};
-  ~FIsdkEditorTelemetry() {};
+  FIsdkEditorTelemetry(){};
+  ~FIsdkEditorTelemetry(){};
 
   static FIsdkEditorTelemetry& Get();
 

@@ -113,10 +113,10 @@ class SIsdkTelemetryPrivacyNotification : public SCompoundWidget, public INotifi
                       [SNew(SOverlay) +
                        SOverlay::Slot()
                            .VAlign(VAlign_Center)
-                           .HAlign(HAlign_Center)
-                               [SNew(SImage)
-                                    .Image(FIsdkEditorStyle::Get().GetBrush("IsdkEditor.MetaLogo"))
-                                    .DesiredSizeOverride(FVector2D(32, 32))]] +
+                           .HAlign(HAlign_Center)[SNew(SImage)
+                                                      .Image(FIsdkEditorStyle::Get().GetBrush(
+                                                          "IsdkEditor.MetaLogo"))
+                                                      .DesiredSizeOverride(FVector2D(32, 32))]] +
               SHorizontalBox::Slot().Padding(10.f, 0.f, 5.f, 0.f)[InteractiveWidgetsBox] +
               SHorizontalBox::Slot()
                   .AutoWidth()

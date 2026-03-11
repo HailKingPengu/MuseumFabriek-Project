@@ -762,8 +762,7 @@ bool IsdkControllerRigComponentTest::RunTest(const FString& Parameters)
 
   ADD_LATENT_AUTOMATION_COMMAND(FIsdkTestRigLambda(
       this,
-      [this](FAutomationTestBase* Test, AIsdkTestRigActor& Actor)
-      {
+      [this](FAutomationTestBase* Test, AIsdkTestRigActor& Actor) {
         SetTestControllerHandBehavior(Test, Actor, EControllerHandBehavior::HandsOnlyProcedural);
       }))
   ADD_LATENT_AUTOMATION_COMMAND(FIsdkTestRigLambda(
