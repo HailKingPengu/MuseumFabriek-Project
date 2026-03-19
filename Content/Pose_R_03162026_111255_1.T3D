@@ -1,0 +1,37 @@
+Begin Object Class=/Script/OculusInteraction.IsdkHandPoseData Name="Pose_R_03162026_111255_1" ExportPath="/Script/OculusInteraction.IsdkHandPoseData'/OculusInteractionSamples/HandPoses/Pose_R_03162026_111255_1.Pose_R_03162026_111255_1'"
+   Begin Object Class=/Script/OculusInteraction.IsdkHandJointMappings Name="Hand Joint Mapping" Archetype="/Script/OculusInteraction.IsdkHandJointMappings'/Script/OculusInteraction.Default__IsdkHandPoseData:Hand Joint Mapping'" ExportPath="/Script/OculusInteraction.IsdkHandJointMappings'/OculusInteractionSamples/HandPoses/Pose_R_03162026_111255_1.Pose_R_03162026_111255_1:Hand Joint Mapping'"
+   End Object
+   Begin Object Class=/Script/OculusInteraction.IsdkHandData Name="Hand Data" Archetype="/Script/OculusInteraction.IsdkHandData'/Script/OculusInteraction.Default__IsdkHandPoseData:Hand Data'" ExportPath="/Script/OculusInteraction.IsdkHandData'/OculusInteractionSamples/HandPoses/Pose_R_03162026_111255_1.Pose_R_03162026_111255_1:Hand Data'"
+   End Object
+   Begin Object Name="Hand Joint Mapping" ExportPath="/Script/OculusInteraction.IsdkHandJointMappings'/OculusInteractionSamples/HandPoses/Pose_R_03162026_111255_1.Pose_R_03162026_111255_1:Hand Joint Mapping'"
+   End Object
+   Begin Object Name="Hand Data" ExportPath="/Script/OculusInteraction.IsdkHandData'/OculusInteractionSamples/HandPoses/Pose_R_03162026_111255_1.Pose_R_03162026_111255_1:Hand Data'"
+      JointPoses(0)=(Translation=(X=0.311415,Y=1.900000,Z=-6.273499))
+      JointPoses(2)=(Rotation=(X=-0.192925,Y=-0.360345,Z=0.722140,W=-0.558073),Translation=(X=-2.067237,Y=2.492022,Z=-3.838426))
+      JointPoses(3)=(Rotation=(X=0.305091,Y=0.144868,Z=-0.745029,W=0.575208),Translation=(X=-2.468965,Y=4.884228,Z=-6.003340))
+      JointPoses(4)=(Rotation=(X=-0.245220,Y=-0.334117,Z=0.732245,W=-0.540416),Translation=(X=-1.495914,Y=6.799768,Z=-8.611713))
+      JointPoses(5)=(Rotation=(X=0.245220,Y=0.334117,Z=-0.732245,W=0.540416),Translation=(X=-1.618763,Y=8.632491,Z=-10.251264))
+      JointPoses(6)=(Rotation=(X=0.000000,Y=0.156434,Z=0.000000,W=0.987688),Translation=(X=-1.908977,Y=0.284375,Z=-3.500033))
+      JointPoses(7)=(Rotation=(X=0.542335,Y=-0.128998,Z=0.024371,W=0.829842),Translation=(X=-2.355067,Y=0.731646,Z=-9.599621))
+      JointPoses(8)=(Rotation=(X=-0.652907,Y=0.141174,Z=-0.062717,W=-0.741518),Translation=(X=-1.643321,Y=4.169347,Z=-11.035030))
+      JointPoses(9)=(Rotation=(X=0.670293,Y=-0.169296,Z=0.061781,W=0.719881),Translation=(X=-1.333524,Y=6.565667,Z=-11.296453))
+      JointPoses(10)=(Rotation=(X=-0.670293,Y=0.169296,Z=-0.061781,W=-0.719881),Translation=(X=-0.913619,Y=8.756960,Z=-11.482186))
+      JointPoses(11)=(Translation=(X=-0.295005,Y=-0.507344,Z=-3.552834))
+      JointPoses(12)=(Rotation=(X=0.584346,Y=-0.111286,Z=0.081349,W=0.799711),Translation=(X=-0.172591,Y=0.254316,Z=-9.564658))
+      JointPoses(13)=(Rotation=(X=-0.684524,Y=0.108715,Z=-0.103390,W=-0.713386),Translation=(X=0.183369,Y=4.344061,Z=-10.819456))
+      JointPoses(14)=(Rotation=(X=0.684351,Y=-0.138358,Z=0.135583,W=0.702949),Translation=(X=0.220742,Y=7.096645,Z=-10.927497))
+      JointPoses(15)=(Rotation=(X=-0.684351,Y=0.138358,Z=-0.135583,W=-0.702949),Translation=(X=0.314838,Y=9.589268,Z=-11.083435))
+      JointPoses(16)=(Rotation=(X=0.000000,Y=-0.156434,Z=0.000000,W=0.987688),Translation=(X=0.993480,Y=-0.203718,Z=-3.424118))
+      JointPoses(17)=(Rotation=(X=0.609596,Y=-0.083189,Z=0.118530,W=0.779373),Translation=(X=1.746524,Y=0.652931,Z=-8.869377))
+      JointPoses(18)=(Rotation=(X=-0.660933,Y=0.096285,Z=-0.151256,W=-0.728710),Translation=(X=1.688649,Y=4.435264,Z=-9.816762))
+      JointPoses(19)=(Rotation=(X=0.717039,Y=-0.066742,Z=0.185051,W=0.668698),Translation=(X=1.530239,Y=7.072365,Z=-10.103202))
+      JointPoses(20)=(Rotation=(X=-0.717039,Y=0.066742,Z=-0.185051,W=-0.668698),Translation=(X=1.180802,Y=9.484720,Z=-10.153814))
+      JointPoses(21)=(Rotation=(X=0.018312,Y=-0.140343,Z=0.207036,W=0.968042),Translation=(X=2.299857,Y=0.941983,Z=-3.407354))
+      JointPoses(22)=(Rotation=(X=-0.587470,Y=0.006206,Z=-0.176491,W=-0.789741),Translation=(X=3.505405,Y=1.369118,Z=-7.789581))
+      JointPoses(23)=(Rotation=(X=0.601454,Y=-0.060940,Z=0.182870,W=0.775305),Translation=(X=2.898477,Y=4.226387,Z=-8.740933))
+      JointPoses(24)=(Rotation=(X=-0.650904,Y=0.007751,Z=-0.215547,W=-0.727876),Translation=(X=2.643608,Y=6.165936,Z=-9.287467))
+      JointPoses(25)=(Rotation=(X=0.650904,Y=-0.007751,Z=0.215547,W=0.727876),Translation=(X=2.070235,Y=8.235774,Z=-9.743864))
+   End Object
+   Handedness=Right
+   HandData="Hand Data"
+End Object
