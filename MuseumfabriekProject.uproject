@@ -40,6 +40,10 @@
 				"LinuxArm64",
 				"Android"
 			]
+		},
+		{
+			"Name": "RLPlugin",
+			"Enabled": false
 		}
 	],
 	"TargetPlatforms": [
