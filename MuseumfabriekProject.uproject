@@ -7,7 +7,10 @@
 		{
 			"Name": "MuseumfabriekProject",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [
@@ -44,6 +47,10 @@
 		{
 			"Name": "RLPlugin",
 			"Enabled": false
+		},
+		{
+			"Name": "Text3D",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [
