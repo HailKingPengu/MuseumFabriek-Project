@@ -7,7 +7,10 @@
 		{
 			"Name": "MuseumfabriekProject",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [
@@ -53,6 +56,10 @@
 				"Win64",
 				"Android"
 			]
+		},
+		{
+			"Name": "Text3D",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [
