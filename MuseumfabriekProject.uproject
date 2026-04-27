@@ -46,7 +46,7 @@
 		},
 		{
 			"Name": "RLPlugin",
-			"Enabled": false
+			"Enabled": true
 		},
 		{
 			"Name": "OculusInteraction",
