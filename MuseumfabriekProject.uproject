@@ -50,7 +50,7 @@
 		},
 		{
 			"Name": "OculusInteraction",
-			"Enabled": false,
+			"Enabled": true,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/2372b714e0aa46ab85168aaf035e099a",
 			"SupportedTargetPlatforms": [
 				"Win64",
@@ -72,6 +72,14 @@
 			"SupportedTargetPlatforms": [
 				"Win64",
 				"Android"
+			]
+		},
+		{
+			"Name": "MetaHuman",
+			"Enabled": true,
+			"SupportedTargetPlatforms": [
+				"Win64",
+				"Linux"
 			]
 		}
 	],
