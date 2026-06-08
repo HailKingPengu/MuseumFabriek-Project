@@ -67,14 +67,6 @@
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/d84abf9ebafe40f4b9676142c3cabb66"
 		},
 		{
-			"Name": "OculusInteractionSamples",
-			"Enabled": false,
-			"SupportedTargetPlatforms": [
-				"Win64",
-				"Android"
-			]
-		},
-		{
 			"Name": "MetaHuman",
 			"Enabled": true,
 			"SupportedTargetPlatforms": [
